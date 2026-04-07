@@ -1,0 +1,2 @@
+PORT = 5000
+DASHSCOPE_API_KEY = "sk-baead287bd2343f6ac9de5a165e1950f"
