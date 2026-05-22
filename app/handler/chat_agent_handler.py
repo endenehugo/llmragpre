@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from flask import request
 from langchain_community.vectorstores import FAISS
-from app.tools import MultiplyTool
+from app.tools import MultiplyTool, WebSearchTool
 from injector import inject
 from langchain_community.chat_models import ChatTongyi
 from langchain.memory import ConversationBufferMemory
@@ -26,10 +26,10 @@ class ChatAgentHandler:
             temperature = 0.8,
             top_p =0.7,
         )
-        tool = MultiplyTool()
-        self.tool_dic={tool.name:tool}
+        tools = [MultiplyTool(), WebSearchTool()]
+        self.tool_dic = {tool.name: tool for tool in tools}
 
-        self.llm = self.llm.bind_tools([tool])
+        self.llm = self.llm.bind_tools(tools)
 
         self.embeddings = dashscope.DashScopeEmbeddings(model = "text-embedding-v3")
 
@@ -52,7 +52,9 @@ class ChatAgentHandler:
             3. 用户当前问题
 
             请基于这些信息，以专业、友好的方式回答用户问题。如果相关文档内容对回答有帮助，请参考使用，但要用自然的方式融入回答中。
-            如果文档内容与问题无关，则可以基于自身知识回答。"""),
+            如果文档内容与问题无关，则可以基于自身知识回答。
+            当用户的问题需要最新信息、外部网页资料、官网说明、新闻动态或互联网检索时，请主动调用 web_search_tool。
+            使用搜索结果回答时，优先整合摘要，并在回答中保留关键来源链接。"""),
             MessagesPlaceholder("history"),
             ("human", """相关的文档内容：{context}
             用户的问题：{query}
@@ -97,8 +99,12 @@ class ChatAgentHandler:
                 if tool_calls:
                     for tool_call in tool_calls:
                         tool = self.tool_dic.get(tool_call.get("name"))
-                        logger.info(f"正在执行的工具：{tool.name}")
-                        content = tool.invoke(tool_call.get("args"))
+                        if tool is None:
+                            content = f"工具不存在：{tool_call.get('name')}"
+                            logger.error(content)
+                        else:
+                            logger.info(f"正在执行的工具：{tool.name}")
+                            content = tool.invoke(tool_call.get("args"))
                         logger.info(f"工具执行结果：{content}")
                         tool_call_id = tool_call.get("id")
                         message.append(ToolMessage(tool_call_id=tool_call_id, content=content))

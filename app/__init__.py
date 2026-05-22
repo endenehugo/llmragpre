@@ -26,6 +26,8 @@ if env not in allowed_envs:
 app.config.from_object(f"config.config_{env}")
 
 os.environ['DASHSCOPE_API_KEY'] = app.config['DASHSCOPE_API_KEY']
+if app.config.get('METASO_API_KEY'):
+    os.environ['METASO_API_KEY'] = app.config['METASO_API_KEY']
 
 ResourceUtils.init_app(app)
 injector.get(Router).register_router(app)
