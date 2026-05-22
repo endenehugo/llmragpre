@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from flask import request
 from langchain_community.vectorstores import FAISS
-from app.tools import MultiplyTool, WebSearchTool
+from app.tools import MultiplyTool, WebSearchTool, WordDocumentTool
 from injector import inject
 from langchain_community.chat_models import ChatTongyi
 from langchain.memory import ConversationBufferMemory
@@ -26,7 +26,7 @@ class ChatAgentHandler:
             temperature = 0.8,
             top_p =0.7,
         )
-        tools = [MultiplyTool(), WebSearchTool()]
+        tools = [MultiplyTool(), WebSearchTool(), WordDocumentTool()]
         self.tool_dic = {tool.name: tool for tool in tools}
 
         self.llm = self.llm.bind_tools(tools)
@@ -54,6 +54,7 @@ class ChatAgentHandler:
             请基于这些信息，以专业、友好的方式回答用户问题。如果相关文档内容对回答有帮助，请参考使用，但要用自然的方式融入回答中。
             如果文档内容与问题无关，则可以基于自身知识回答。
             当用户的问题需要最新信息、外部网页资料、官网说明、新闻动态或互联网检索时，请主动调用 web_search_tool。
+            当用户要求生成、导出或整理 Word 文档时，请主动调用 word_document_tool。
             使用搜索结果回答时，优先整合摘要，并在回答中保留关键来源链接。"""),
             MessagesPlaceholder("history"),
             ("human", """相关的文档内容：{context}
