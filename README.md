@@ -1,95 +1,266 @@
 # LLM RAG 项目
 
-本项目是一个基于 Flask 和 LangChain 构建的 LLM 应用，旨在提供单一对话、多轮对话（记忆）、RAG（检索增强生成）以及基于 Agent 的智能问答功能。项目还包含一个简单的前端界面以供交互使用。
+这是一个基于 Flask、LangChain 和 LangGraph 的中文问答项目，集成了单轮对话、多轮记忆对话、RAG 检索增强问答，以及带工具调用能力的 Agent。项目自带一个简单前端页面，可直接在浏览器中进行交互。
 
-## 🌟 功能特性
+## 功能概览
 
-- **单轮对话 (`/chat/single`)**: 基本的 LLM 问答功能。
-- **多轮对话 (`/chat/memory`)**: 带有上下文记忆功能的对话接口。
-- **RAG 检索增强生成 (`/chat/rag`)**: 结合 FAISS 本地向量数据库以及自定义业务数据（例如 `电商产品数据.txt`）回答具体领域的问题。
-- **Agent 智能体问答 (`/chat/agent`)**: 具备工具调用能力的代理对话模式（集成了 LangGraph 及外部工具），现已支持 Web Search Tool 自动联网搜索公开网页信息。
-- **前端交互界面 (`/`)**: 包含 `index.html` 以及配套静态资源（CSS/JS），支持 Firebase 集成。
+- 单轮对话：通过 `/chat/single` 直接调用大模型完成一次问答。
+- 多轮记忆对话：通过 `/chat/memory` 保存上下文历史，适合连续追问。
+- RAG 检索问答：通过 `/chat/rag` 从本地 FAISS 索引中召回知识片段后再生成回答。
+- Agent 智能问答：通过 `/chat/agent` 结合大模型、检索上下文和工具调用完成更复杂的问题处理。
+- Web 页面入口：通过 `/` 渲染前端页面，便于本地调试和手工验证接口。
 
-## 🛠️ 技术栈
+## 当前使用的模型与能力
 
-- **后端框架**: Flask, Flask-Cors
-- **依赖注入**: Injector
-- **大模型框架**: LangChain, LangGraph
-- **向量数据库**: FAISS (`faiss-cpu`)
-- **模型接口**: OpenAI, DashScope 等
-- **文档解析**: Unstructured, python-docx, docx2txt
+- 对话模型：阿里云通义千问 `qwen-plus`
+- 向量模型：DashScope Embedding `text-embedding-v3`
+- 向量库：FAISS
+- Agent 工具：
+	- `MultiplyTool`：简单乘法计算
+	- `WebSearchTool`：联网搜索公开网页信息
+	- `WordDocumentTool`：生成或整理 Word 文档
 
-## 📁 目录结构
+## 项目结构
 
-```
+```text
 .
-├── app/                  # Flask 应用核心逻辑
-│   ├── handler/          # 各种模式的聊天处理器（单点/记忆/RAG/代理）
-│   ├── response/         # API 统一响应封装
-│   ├── router/           # 路由注册与蓝图管理
-│   ├── static/           # 前端静态文件 (JS, CSS, 图片)
-│   ├── templates/        # 前端 HTML 模板
-│   ├── tools/            # Agent 可用的外部工具
-│   └── utils/            # 通用工具类
-├── config/               # 配置文件 (开发、预发、生产、测试环境)
-├── resources/            # 数据资源与向量索引
-│   ├── faiss_index/      # FAISS 向量数据库
-│   ├── chat_history.json # 本地聊天记录保存
-│   └── 电商产品数据.txt   # 用于 RAG 的基础文本数据
-├── requirements.txt      # Python 依赖包列表
-└── run.py                # 项目启动入口
+├── app/
+│   ├── handler/                # 路由处理器：单轮、记忆、RAG、Agent、首页、测试
+│   ├── response/               # 统一响应封装
+│   ├── router/                 # Flask 路由注册
+│   ├── static/                 # 前端静态资源
+│   ├── templates/              # 前端页面模板
+│   ├── tools/                  # Agent 工具实现
+│   ├── utils/                  # 资源路径、设备信息等工具
+│   ├── __init__.py             # Flask app 初始化与配置加载
+│   └── module.py               # Injector 模块
+├── config/                     # dev / test / pre / prod 配置
+├── resources/
+│   ├── faiss_index/            # 当前 RAG 使用的向量索引
+│   ├── faiss_index_steffen/    # 备用或历史向量索引
+│   ├── 电商产品数据.txt         # RAG 基础业务文本
+│   ├── chat_history.json       # 对话历史数据
+│   └── memory.txt              # 记忆相关资源
+├── test_tools/                 # 工具级测试脚本
+├── run.py                      # 本地启动入口
+└── requirements.txt            # Python 依赖
 ```
 
-## 🚀 快速开始
+## 运行环境
 
-### 1. 环境准备
+- Python 3.8 及以上
+- 建议使用虚拟环境
+- 需要可用的 DashScope API Key
 
-确保你已经安装了 Python 3.8 或更高版本。
-
-克隆或进入项目目录，创建并激活虚拟环境：
-```bash
-# 激活你的虚拟环境 (例如使用 conda 或 venv)
-# conda activate myenv
-```
-
-### 2. 安装依赖
+## 安装依赖
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. 环境配置
+如果你使用虚拟环境，推荐先创建再安装：
 
-在项目根目录创建 `.env` 文件，并根据需要配置大模型的 API 密钥（例如 OpenAI API Key 或 DashScope API Key 等相关环境变量配置）：
-
-```ini
-OPENAI_API_KEY=your_openai_api_key
-# 其他需要的环境变量配置...
+```bash
+python -m venv .venv
 ```
 
-### 4. 运行服务
+Windows PowerShell:
 
-通过下面命令启动 Flask 开发服务器：
+```powershell
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+Linux / macOS:
+
+```bash
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## 配置说明
+
+当前项目不是通过 `.env` 自动加载配置，而是通过环境变量 `FLASK_ENV` 选择对应配置文件：
+
+- `dev` 对应 `config/config_dev.py`
+- `test` 对应 `config/config_test.py`
+- `pre` 对应 `config/config_pre.py`
+- `prod` 对应 `config/config_prod.py`
+
+应用启动时会在 `app/__init__.py` 中执行：
+
+```python
+env = os.environ.get("FLASK_ENV", "dev")
+app.config.from_object(f"config.config_{env}")
+```
+
+因此你需要先设置 `FLASK_ENV`，再启动服务。
+
+Windows PowerShell:
+
+```powershell
+$env:FLASK_ENV = "dev"
+python run.py
+```
+
+Linux / macOS:
+
+```bash
+export FLASK_ENV=dev
+python run.py
+```
+
+配置项至少包括：
+
+```python
+PORT = 5000
+DASHSCOPE_API_KEY = "your_key"
+METASO_API_KEY = "optional"
+```
+
+说明：
+
+- `DASHSCOPE_API_KEY` 为当前项目的核心配置。
+- `METASO_API_KEY` 为可选配置，存在时会在应用启动时写入环境变量。
+- 生产环境不要把真实密钥提交到仓库中，建议改为环境变量或独立配置注入。
+
+## 启动项目
+
+本地启动：
 
 ```bash
 python run.py
 ```
-默认通常会运行在 `http://0.0.0.0:端口号`，具体端口见配置项。打开浏览器即可访问自带的前端界面。
 
-## 📡 API 接口说明
+默认监听地址：
 
-- `GET /` : 渲染首页 HTML 交互界面。
-- `GET /test/test` : 接口测试端点。
-- `GET /chat/single` : 单轮对话接口。
-- `POST /chat/memory` : 带上下文记忆的对话接口。
-- `POST /chat/agent` : 基于智能 Agent 的请求端点（支持工具调用链路）。
-- `POST /chat/rag` : 基于本地知识库（FAISS）的检索增强生成对话。
+```text
+http://0.0.0.0:5000
+```
 
-### Agent 工具能力补充
+浏览器访问首页：
 
-- **MultiplyTool**: 处理简单数值乘法计算。
-- **WebSearchTool**: 当问题需要最新资讯、网页资料或官网信息时，Agent 会自动调用 DuckDuckGo 搜索并结合搜索结果生成回答。
+```text
+http://127.0.0.1:5000/
+```
 
-## 📝 备注
+说明：
 
-- 相关的本地向量索引存放在 `resources/faiss_index/` 路径下。如果本地业务数据（如 `电商产品数据.txt`）发生变动，需要更新向量索引以在 RAG 模型下生效。
+- 当前 `run.py` 以 Flask 开发模式启动，并开启 `debug=True`。
+- 线上部署建议使用 Gunicorn 或 uWSGI，不建议直接执行 `python run.py`。
+
+## API 接口
+
+### 1. 首页
+
+- 方法：`GET`
+- 路径：`/`
+- 说明：渲染前端页面 `templates/index.html`
+
+### 2. 测试接口
+
+- 方法：`GET`
+- 路径：`/test/test`
+- 参数：`user_name`
+
+示例：
+
+```text
+GET /test/test?user_name=Tom
+```
+
+### 3. 单轮对话
+
+- 方法：`GET`
+- 路径：`/chat/single`
+- 参数：`query`
+
+示例：
+
+```text
+GET /chat/single?query=你好
+```
+
+### 4. 多轮记忆对话
+
+- 方法：`POST`
+- 路径：`/chat/memory`
+- 请求体：JSON
+
+```json
+{
+	"query": "帮我总结一下昨天的对话"
+}
+```
+
+### 5. RAG 检索问答
+
+- 方法：`POST`
+- 路径：`/chat/rag`
+- 请求体：JSON
+
+```json
+{
+	"query": "这款电商产品的主要卖点是什么？"
+}
+```
+
+说明：
+
+- 默认加载 `resources/faiss_index/` 作为向量索引。
+- 检索内容来自本地业务知识库，适合固定领域问答。
+
+### 6. Agent 智能问答
+
+- 方法：`POST`
+- 路径：`/chat/agent`
+- 请求体：JSON
+
+```json
+{
+	"query": "帮我搜索一下某品牌官网，并整理成 Word 文档"
+}
+```
+
+说明：
+
+- Agent 会结合历史上下文、本地知识检索结果和工具调用结果作答。
+- 当问题涉及实时信息、官网资料或网页内容时，会优先尝试调用 `WebSearchTool`。
+- 当问题涉及文档导出时，会尝试调用 `WordDocumentTool`。
+
+## 知识库与资源说明
+
+- RAG 默认读取 `resources/faiss_index/` 下的本地向量索引。
+- 原始业务数据示例位于 `resources/电商产品数据.txt`。
+- 如果你更新了业务文本，但没有重建索引，那么 `/chat/rag` 和 `/chat/agent` 读取到的仍然会是旧知识。
+
+## 工具测试
+
+仓库中提供了工具测试脚本：
+
+- `test_tools/test_web_search_tool.py`
+- `test_tools/test_word_document_tool.py`
+
+可用于单独验证工具是否可用。
+
+## 部署建议
+
+如果部署到 Ubuntu 服务器，推荐使用 Gunicorn + Nginx：
+
+```bash
+pip install gunicorn
+export FLASK_ENV=prod
+gunicorn -w 2 -b 0.0.0.0:5000 app:app
+```
+
+建议做法：
+
+- Gunicorn 监听 `127.0.0.1:5000`
+- Nginx 对外监听 `80`
+- 阿里云安全组放行 `22` 和 `80`
+
+## 已知注意事项
+
+- 当前配置文件中如果直接写入真实密钥，存在泄露风险。
+- 当前启动入口适合开发调试，不适合作为生产启动命令。
+- `requirements.txt` 如在 Windows 下以 Unicode 编码保存，上传到 Linux 后建议先确认编码和换行符正常。
