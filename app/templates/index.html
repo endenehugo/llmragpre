@@ -1,51 +1,111 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <title>Chat Bot User Interface</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>LLM 智能助手</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="/static/css/style.css">
     <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.js"></script>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <script src="https://libs.baidu.com/jquery/2.1.1/jquery.min.js"></script>
     <script type="text/javascript" src="/static/js/firebase.js"></script>
     <script type="text/javascript" src="/static/js/credentials.js"></script>
-
 </head>
 
 <body>
-
-<div class="headerBar">
-    <div class="user-photo"><img src="/static/images/ana.JPG"></div>
-    <p class="title">聊天</p>
-</div>
-
-<div class="chatbox">
-
-    <div class="chatlogs">
-
-        <div class="chat friend">
-            <div class="user-photo"><img src="/static/images/ana.JPG"></div>
-            <p class="chat-message">你好，我是您的智能助手，有问题可以随时问我哦~</p>
+<div class="app-shell">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-mark">AI</div>
+            <div class="brand-copy">
+                <p class="eyebrow">LLM RAG Assistant</p>
+                <h1>智能助手</h1>
+                <p>对话、检索、总结与内容组织</p>
+            </div>
         </div>
 
-        <div class="chat friend" id="loadingGif" style="display: none;">
-            <div class="user-photo"><img src="/static/images/ana.JPG"></div>
-            <div class="gif"><img src="/static/images/loading.gif"></div>
-        </div>
+        <section class="sidebar-card">
+            <p class="eyebrow">Workspace</p>
+            <p></p>
+            <div class="status-pill">
+                <span class="status-dot"></span>
+                服务在线
+            </div>
+        </section>
 
-    </div>
-</div>
-<div class="chat-form">
-    <div id="inputDiv">
-        <div id="buttonDiv"></div>
-        <textarea class="input" placeholder="有问题尽快问我~" rows="1" data-min-rows='1'></textarea>
-    </div>
-    <div id="chat-form-buttons">
-        <input type="image" src="/static/images/keyboard.png" id="switchInputType"/>
-    </div>
-</div>
+        <section class="sidebar-history">
+            <p class="eyebrow">建议提问</p>
+            <ul class="history-list">
+                <li>帮我总结这个项目当前具备的核心能力</li>
+                <li>请根据仓库结构解释这个项目的主要模块</li>
+                <li>把现有能力整理成适合演示的产品话术</li>
+            </ul>
+        </section>
+    </aside>
 
+    <main class="workspace">
+        <header class="workspace-topbar">
+            <div>
+                <p class="eyebrow">Chat</p>
+                <h2>今天想了解点什么？</h2>
+                <p></p>
+            </div>
+            <div class="workspace-badge">LLM + RAG</div>
+        </header>
+
+        <section class="conversation-shell">
+            <section class="welcome-panel" id="chatIntro">
+                <p class="eyebrow"></p>
+                <h2>把问题发过来，剩下的交给助手。</h2>
+                <p class="welcome-copy">你可以直接输入问题，也可以点下面的建议卡片快速开始。</p>
+
+                <div class="intro-actions">
+                    <button type="button" class="prompt-chip" data-prompt="帮我总结一下这个项目现在具备哪些能力">总结项目能力</button>
+                    <button type="button" class="prompt-chip" data-prompt="请用更产品化的语言介绍这个项目的亮点">输出产品亮点</button>
+                    <button type="button" class="prompt-chip" data-prompt="帮我设计一个适合这个项目的演示话术">设计演示话术</button>
+                    <button type="button" class="prompt-chip" data-prompt="请帮我梳理这个项目适合什么应用场景">梳理应用场景</button>
+                </div>
+            </section>
+
+            <div class="chatbox">
+                <div class="chatlogs">
+                    <div class="chat friend">
+                        <div class="user-photo"><img src="/static/images/ana.JPG" alt="assistant avatar"></div>
+                        <p class="chat-message">你好，我是你的智能助手。你可以直接提问、让我总结内容，或者让我帮你整理更复杂的问题。</p>
+                    </div>
+
+                    <div class="chat friend" id="loadingGif" style="display: none;">
+                        <div class="user-photo"><img src="/static/images/ana.JPG" alt="assistant avatar"></div>
+                        <div class="gif"><img src="/static/images/loading.gif" alt="loading"></div>
+                    </div>
+                </div>
+            </div>
+
+            <section class="composer-panel">
+                <div id="buttonDiv" class="button-group"></div>
+
+                <div class="chat-form">
+                    <div class="composer-frame">
+                        <textarea class="input" placeholder="给智能助手发消息" rows="1" data-min-rows="1"></textarea>
+                        <div class="composer-actions">
+                            <button type="button" class="icon-button" id="switchInputType" aria-label="切换输入方式">
+                                <img src="/static/images/keyboard.png" alt="switch input">
+                            </button>
+                            <button type="button" class="send-button" id="sendMessage" aria-label="发送消息">
+                                <span>发送</span>
+                                <span class="send-arrow">↑</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="composer-footnote">Enter 发送，Shift + Enter 换行</p>
+            </section>
+        </section>
+    </main>
+</div>
 
 <script type="text/javascript" src="/static/js/index.js"></script>
 </body>
-
 </html>

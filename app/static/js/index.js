@@ -43,9 +43,43 @@ var DEFAULT_TIME_DELAY = 3000;
 
 // Variable for the chatlogs div
 var $chatlogs = $('.chatlogs');
+
+function updateSwitchInputIcon(iconName) {
+	$("#switchInputType img").attr("src", "/static/images/" + iconName);
+}
+
+function setConversationState(hasConversation) {
+	$("body").toggleClass("page-has-conversation", hasConversation);
+}
+
+function submitCurrentInput() {
+	var input = $("textarea.input")[0];
+
+	if (!input) {
+		return;
+	}
+
+	var value = input.value.trim();
+
+	if (!value) {
+		return;
+	}
+
+	ButtonClicked = false;
+	setConversationState(true);
+	send(value);
+	$(".input").attr("rows", "1");
+	input.value = "";
+
+	if ($("#switchInputType").is(":visible")) {
+		$("#switchInputType").toggle();
+		$('.buttonResponse').remove();
+	}
+}
 	
 
 $('document').ready(function(){
+	setConversationState(false);
 	
 	// Hide the switch input type button initially
 	$("#switchInputType").toggle();
@@ -55,11 +89,11 @@ $('document').ready(function(){
 
 		// Toggle which input type is shown
 		if($('.buttonResponse').is(":visible")) {
-			$("#switchInputType").attr("src", "images/multipleChoice.png");
+			updateSwitchInputIcon("multipleChoice.png");
 		}
 
 		else {
-			$("#switchInputType").attr("src", "images/keyboard.png");
+			updateSwitchInputIcon("keyboard.png");
 		}
 		$('textarea').toggle();
 		$('.buttonResponse').toggle();
@@ -75,27 +109,24 @@ $('document').ready(function(){
 	$("textarea").keypress(function(event) {
 		
 		// If the enter key is pressed
-		if(event.which === 13) {
+		if(event.which === 13 && !event.shiftKey) {
 
 			// Ignore the default function of the enter key(Dont go to a new line)
 			event.preventDefault();
+			submitCurrentInput();
 
-			ButtonClicked = false;
+		}
+	});
 
-			// Call the method for sending a message, pass in the text from the user
-			send(this.value);
-			
-			// reset the size of the text area
-			$(".input").attr("rows", "1");
+	$("#sendMessage").click(function() {
+		submitCurrentInput();
+	});
 
-			// Clear the text area
-			this.value = "";
-
-			if($("#switchInputType").is(":visible")) {
-				$("#switchInputType").toggle();
-				$('.buttonResponse').remove();
-			}
-
+	$('.prompt-chip').click(function() {
+		var prompt = $(this).data('prompt');
+		if (prompt) {
+			$(".input").val(prompt).trigger('input');
+			submitCurrentInput();
 		}
 	});
 
@@ -113,6 +144,7 @@ $('document').ready(function(){
 	$('.chat-form').on("click", '.buttonResponse', function() {
 
 		ButtonClicked = true;
+		setConversationState(true);
 
 		// Send the text on the button as a user message
 		send(this.innerText);
@@ -136,6 +168,12 @@ $('document').ready(function(){
 // Method which takes the users text and sends an AJAX post request to API.AI
 // Creates a new Div with the users text, and recieves a response message from API.AI 
 function send(text) {
+
+	if (!text || !text.trim()) {
+		return;
+	}
+
+	setConversationState(true);
 
 	// Create a div with the text that the user typed in
 	$chatlogs.append(
@@ -356,6 +394,7 @@ function buttonResponse(message)
 		$('textarea').toggle();
 
 		// Show the switch input button
+		updateSwitchInputIcon("keyboard.png");
 		$("#switchInputType").show();
 
 		// For each of the button responses
@@ -443,6 +482,7 @@ function showLoading()
 
 	// $('.chat-form').css('visibility', 'hidden');
 	$('.input').prop('disabled', true);
+	$('#sendMessage').prop('disabled', true);
  }
 
 
@@ -452,6 +492,7 @@ function hideLoading()
 {
 	// $('.chat-form').css('visibility', 'visible');
 	$('.input').prop('disabled', false);
+	$('#sendMessage').prop('disabled', false);
 	$("#loadingGif").hide();
 
 	// Clear the text area of text
