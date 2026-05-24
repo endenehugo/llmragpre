@@ -207,8 +207,21 @@ function send(text) {
 			newRecievedMessage(data.message);
 
 		},
-		error: function() {
-			newRecievedMessage("Internal Server Error");
+		error: function(xhr, textStatus, errorThrown) {
+			var serverMessage = "";
+
+			if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
+				serverMessage = xhr.responseJSON.message;
+			} else if (xhr && xhr.responseText) {
+				serverMessage = xhr.responseText;
+			}
+
+			serverMessage = String(serverMessage || "").trim();
+			if (!serverMessage) {
+				serverMessage = errorThrown || textStatus || "Internal Server Error";
+			}
+
+			newRecievedMessage(serverMessage);
 		}
 	});
 }

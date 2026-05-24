@@ -250,14 +250,30 @@ GET /chat/single?query=你好
 ```bash
 pip install gunicorn
 export FLASK_ENV=prod
-gunicorn -w 2 -b 0.0.0.0:5000 app:app
+gunicorn -c gunicorn.conf.py wsgi:app
 ```
 
 建议做法：
 
+- 先使用仓库内的 `gunicorn.conf.py`，不要直接沿用 Gunicorn 默认 30 秒超时
+- 当前多轮记忆保存在进程内，生产环境建议先保持单 worker；如果要扩容，需要把对话历史改到 Redis 或数据库
 - Gunicorn 监听 `127.0.0.1:5000`
 - Nginx 对外监听 `80`
 - 阿里云安全组放行 `22` 和 `80`
+
+一个更稳妥的启动示例：
+
+```bash
+cd /opt/llmrag
+source .venv/bin/activate
+export FLASK_ENV=prod
+gunicorn -c gunicorn.conf.py wsgi:app
+```
+
+如果页面上看到的是 `Internal Server Error`，先直接看 Gunicorn 日志，常见是以下两类：
+
+- 请求超过 30 秒，被 Gunicorn 默认超时杀掉
+- 服务器资源偏小，多 worker 重复加载向量索引后内存紧张或 worker 被回收
 
 ## 已知注意事项
 
