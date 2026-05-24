@@ -17,9 +17,21 @@ function assertEqual(actual, expected, description) {
 const rawMessage = '第一行\n第二行';
 const indexJsPath = path.join(__dirname, '..', 'app', 'static', 'js', 'index.js');
 const indexJsContent = fs.readFileSync(indexJsPath, 'utf8');
+const credentialsJsPath = path.join(__dirname, '..', 'app', 'static', 'js', 'credentials.js');
+const credentialsJsContent = fs.readFileSync(credentialsJsPath, 'utf8');
 
 if (!indexJsContent.includes('newRecievedMessage(data.message);')) {
   console.error('frontend should pass raw response text into newRecievedMessage');
+  process.exit(1);
+}
+
+if (!credentialsJsContent.includes('window.location.origin')) {
+  console.error('frontend should derive base url from current page origin');
+  process.exit(1);
+}
+
+if (credentialsJsContent.includes('http://127.0.0.1:5000/')) {
+  console.error('frontend should not hardcode localhost base url for deployed usage');
   process.exit(1);
 }
 
