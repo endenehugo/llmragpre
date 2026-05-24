@@ -204,7 +204,7 @@ function send(text) {
             console.log(data);
 		
 			// Pass the response into the method
-			newRecievedMessage(JSON.stringify(data.message, undefined, 2));
+			newRecievedMessage(data.message);
 
 		},
 		error: function() {
@@ -222,9 +222,12 @@ function send(text) {
 // This method tells which type of message is to be sent
 // Splits between the button messages, multi messages and single message
 function newRecievedMessage(messageText) {
+	var normalizedMessage = String(messageText)
+		.replace(/\\r\\n/g, "\n")
+		.replace(/\\n/g, "\n");
 
 	// Variable storing the message with the "" removed
-	var removedQuotes = messageText.replace(/[""]/g,"");
+	var removedQuotes = normalizedMessage.replace(/[""]/g,"");
 
 	// update the last message recieved variable for storage in the database
 	lastRecievedMessage = removedQuotes;
