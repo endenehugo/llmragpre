@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from flask import Flask,Blueprint
 from injector import inject
-from app.handler import TestHandler,ChatSingleHandler,ChatMemoryHandler,IndexHandler,ChatAgentHandler,ChatRagHandler
+from app.handler import TestHandler,ChatSingleHandler,ChatMemoryHandler,IndexHandler,ChatAgentHandler,ChatRagHandler,ConversationHandler,DocumentHandler
 
 
 
@@ -14,6 +14,8 @@ class Router:
     index_handler: IndexHandler
     chat_agent_handler: ChatAgentHandler
     chat_rag_handler: ChatRagHandler
+    conversation_handler: ConversationHandler
+    document_handler: DocumentHandler
 
     def register_router(self, app: Flask):
         bp = Blueprint('llmrag', __name__, url_prefix='')
@@ -25,5 +27,11 @@ class Router:
         bp.add_url_rule('/chat/memory', view_func=self.chat_memory_handler.chat_memory, methods=['POST'])
         bp.add_url_rule('/chat/agent', view_func=self.chat_agent_handler.chat_agent, methods=['POST'])
         bp.add_url_rule('/chat/rag', view_func=self.chat_rag_handler.chat_rag, methods=['POST'])
+        bp.add_url_rule('/conversation/create', view_func=self.conversation_handler.create, methods=['POST'])
+        bp.add_url_rule('/conversation/list', view_func=self.conversation_handler.list, methods=['GET'])
+        bp.add_url_rule('/conversation/detail', view_func=self.conversation_handler.detail, methods=['GET'])
+        bp.add_url_rule('/conversation/chat', view_func=self.conversation_handler.chat, methods=['POST'])
+        bp.add_url_rule('/document/upload', view_func=self.document_handler.upload, methods=['POST'])
+        bp.add_url_rule('/document/delete', view_func=self.document_handler.delete, methods=['POST'])
 
         app.register_blueprint(bp)

@@ -166,6 +166,105 @@ textarea {
     line-height: 1.5;
 }
 
+.section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.sidebar-action-button {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-sidebar);
+    border-radius: 999px;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.conversation-list,
+.document-list {
+    margin-top: 14px;
+    display: grid;
+    gap: 10px;
+}
+
+.conversation-item,
+.document-item {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-sidebar);
+    border-radius: 14px;
+    padding: 12px 14px;
+}
+
+.conversation-item {
+    cursor: pointer;
+    text-align: left;
+}
+
+.conversation-item.is-active {
+    border-color: rgba(16, 163, 127, 0.54);
+    background: rgba(16, 163, 127, 0.16);
+}
+
+.conversation-item-title,
+.document-item-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-sidebar);
+}
+
+.conversation-item-meta,
+.document-item-meta {
+    margin: 6px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-sidebar-muted);
+}
+
+.document-item {
+    display: grid;
+    gap: 8px;
+}
+
+.document-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.document-delete {
+    border: 0;
+    background: transparent;
+    color: #fecaca;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.document-hint {
+    margin-top: 12px;
+    color: var(--text-sidebar-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.hidden-file-input {
+    display: none;
+}
+
+.empty-state {
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-sidebar-muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
 .workspace {
     min-width: 0;
     display: flex;
@@ -290,6 +389,16 @@ textarea {
 
 .chat.self {
     justify-content: flex-end;
+}
+
+.chat.self .chat-message,
+.chat.self .user-photo {
+    order: 2;
+}
+
+.chat.self .user-photo {
+    background: #dbeafe;
+    border-color: rgba(59, 130, 246, 0.18);
 }
 
 .chat.self .chat-message {
@@ -480,7 +589,7 @@ textarea {
     }
 
     .sidebar {
-        display: none;
+        display: flex;
     }
 
     .workspace {
@@ -501,6 +610,10 @@ textarea {
 
     .composer-panel {
         padding: 0 16px 16px;
+    }
+
+    .sidebar {
+        padding: 16px;
     }
 }
 

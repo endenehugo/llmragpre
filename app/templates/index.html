@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="/static/css/style.css">
     <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.js"></script>
-    <script type="text/javascript" src="/static/js/firebase.js"></script>
     <script type="text/javascript" src="/static/js/credentials.js"></script>
 </head>
 
@@ -27,7 +26,7 @@
 
         <section class="sidebar-card">
             <p class="eyebrow">Workspace</p>
-            <p></p>
+            <p id="currentConversationTitle">正在加载会话...</p>
             <div class="status-pill">
                 <span class="status-dot"></span>
                 服务在线
@@ -35,12 +34,21 @@
         </section>
 
         <section class="sidebar-history">
-            <p class="eyebrow">建议提问</p>
-            <ul class="history-list">
-                <li>帮我总结这个项目当前具备的核心能力</li>
-                <li>请根据仓库结构解释这个项目的主要模块</li>
-                <li>把现有能力整理成适合演示的产品话术</li>
-            </ul>
+            <div class="section-heading">
+                <p class="eyebrow">会话</p>
+                <button type="button" class="sidebar-action-button" id="createConversation">新建</button>
+            </div>
+            <div class="history-list conversation-list" id="conversationList"></div>
+        </section>
+
+        <section class="sidebar-history">
+            <div class="section-heading">
+                <p class="eyebrow">文档</p>
+                <button type="button" class="sidebar-action-button" id="triggerUpload">上传</button>
+            </div>
+            <input type="file" id="documentInput" class="hidden-file-input" accept=".txt,.pdf,.docx,.doc">
+            <div class="document-hint" id="uploadHint">支持 txt、pdf、docx。doc 需要先转成 docx。</div>
+            <div class="document-list" id="documentList"></div>
         </section>
     </aside>
 
@@ -48,26 +56,30 @@
         <header class="workspace-topbar">
             <div>
                 <p class="eyebrow">Chat</p>
-                <h2>今天想了解点什么？</h2>
-                <p></p>
+                <h2 id="workspaceTitle">今天想了解点什么？</h2>
+                <p id="workspaceSubtitle">会话、文档和历史记录都会自动持久化。</p>
             </div>
             <div class="workspace-badge">LLM + RAG</div>
         </header>
 
         <section class="conversation-shell">
             <section class="welcome-panel" id="chatIntro">
-                <p class="eyebrow"></p>
+                <p class="eyebrow">Multi-Doc RAG</p>
                 <h2>把问题发过来，剩下的交给助手。</h2>
-                <p class="welcome-copy"></p>
-
-                
+                <p class="welcome-copy">先新建或选择一个会话，再上传文档。后续提问会优先命中当前会话内的文档内容，并保留完整历史。</p>
+                <div class="intro-actions">
+                    <button type="button" class="prompt-chip" data-prompt="请总结当前会话里上传文档的主要结论">请总结上传文档</button>
+                    <button type="button" class="prompt-chip" data-prompt="请列出这份材料里的关键事实和时间节点">提取关键事实</button>
+                    <button type="button" class="prompt-chip" data-prompt="请把当前讨论整理成结构化提纲">整理对话提纲</button>
+                    <button type="button" class="prompt-chip" data-prompt="请告诉我当前会话已经绑定了哪些文档">查看会话文档</button>
+                </div>
             </section>
 
             <div class="chatbox">
                 <div class="chatlogs">
-                    <div class="chat friend">
+                    <div class="chat friend" id="emptyAssistantMessage">
                         <div class="user-photo"><img src="/static/images/ana.JPG" alt="assistant avatar"></div>
-                        <p class="chat-message">你好，我是你的智能助手。你可以直接提问、让我总结内容，或者让我帮你整理更复杂的问题。</p>
+                        <p class="chat-message">你好，我是你的智能助手。你可以先新建会话并上传文档，然后直接问“这份文档讲了什么”或继续历史会话。</p>
                     </div>
 
                     <div class="chat friend" id="loadingGif" style="display: none;">
@@ -101,6 +113,6 @@
     </main>
 </div>
 
-<script type="text/javascript" src="/static/js/index.js"></script>
+<script type="text/javascript" src="/static/js/conversation_index.js"></script>
 </body>
 </html>

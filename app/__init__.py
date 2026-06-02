@@ -1,6 +1,8 @@
 import os
+from dotenv import load_dotenv
 
 env = os.environ.get("FLASK_ENV", "dev")
+load_dotenv()
 
 if os.name == "nt" and env in {"dev", "test"}:
     os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
@@ -29,6 +31,7 @@ if env not in allowed_envs:
     raise ValueError(f"无效的FLASK_ENV值: '{env}'. 允许的值为: {', '.join(allowed_envs)}.")
 
 app.config.from_object(f"config.config_{env}")
+app.config["MAX_CONTENT_LENGTH"] = app.config.get("UPLOAD_MAX_CONTENT_LENGTH", 20 * 1024 * 1024)
 
 os.environ['DASHSCOPE_API_KEY'] = app.config['DASHSCOPE_API_KEY']
 if app.config.get('METASO_API_KEY'):

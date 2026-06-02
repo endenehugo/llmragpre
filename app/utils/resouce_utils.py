@@ -14,6 +14,12 @@ class ResourceUtils:
         return os.path.join(cls._RESOURCE_PATH, filename)
 
     @classmethod
+    def ensure_resource_dir(cls, dirname):
+        path = cls.get_resource_path(dirname)
+        os.makedirs(path, exist_ok=True)
+        return path
+
+    @classmethod
     def load_json_resource(cls, filename):
         with open(cls.get_resource_path(filename), 'r', encoding='utf-8') as f:
             return json.load(f)
