@@ -22,6 +22,19 @@ class ChatRagHandler:
     uniqueComputerUtils: UniqueComputerUtils
 
     def __post_init__(self):
+        self.llm = None
+        self.embeddings = None
+        self.db = None
+        self.retriever = None
+        self.prompt = None
+        self.memory = None
+        self.contextualize_q = None
+        self.chain = None
+
+    def _ensure_initialized(self):
+        if self.chain is not None:
+            return
+
         # 初始化LLM模型
         self.llm = ChatTongyi(
             streaming=True,
@@ -93,6 +106,7 @@ class ChatRagHandler:
         return "\n".join(doc.page_content for doc in docs)
 
     def chat_rag_args(self):
+        self._ensure_initialized()
         # 接收页面参数
         query = request.args.get('query', default=None, type=str)
 
@@ -128,6 +142,7 @@ class ChatRagHandler:
 
     def chat_rag(self):
         try:
+            self._ensure_initialized()
             # 接收页面参数
             data = request.get_json()
             logger.info(f"收到请求数据: {data}")

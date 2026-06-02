@@ -2,7 +2,7 @@ import os
 from typing import Any, Type
 
 from docx import Document
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
 
 from app.utils import ResourceUtils
@@ -17,8 +17,8 @@ class WordDocumentInput(BaseModel):
 class WordDocumentTool(BaseTool):
     """生成 Word 文档工具。"""
 
-    name = "word_document_tool"
-    description = "当需要把内容整理成 Word 文档并保存到本地时使用该工具"
+    name: str = "word_document_tool"
+    description: str = "当需要把内容整理成 Word 文档并保存到本地时使用该工具"
     args_schema: Type[BaseModel] = WordDocumentInput
 
     def _run(self, *args: Any, **kwargs: Any) -> str:

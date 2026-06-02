@@ -58,6 +58,12 @@
 pip install -r requirements.txt
 ```
 
+如果是 Linux 生产环境，建议使用单独的最小依赖清单：
+
+```bash
+pip install -r requirements-prod.txt
+```
+
 如果你使用虚拟环境，推荐先创建再安装：
 
 ```bash
@@ -248,13 +254,16 @@ GET /chat/single?query=你好
 如果部署到 Ubuntu 服务器，推荐使用 Gunicorn + Nginx：
 
 ```bash
-pip install gunicorn
 export FLASK_ENV=prod
+pip install -r requirements-prod.txt
 gunicorn -c gunicorn.conf.py wsgi:app
 ```
 
 建议做法：
 
+- 生产环境使用全新的虚拟环境，不要复用本机 Windows 调试环境，也不要混用用户级 site-packages
+- 生产安装优先使用 `requirements-prod.txt`，只保留当前运行路径真正需要的依赖
+- 当前 Windows 环境里存在 `torch`，它会引入 `libiomp5md.dll`；而 `faiss-cpu` 会触发另一套 OpenMP，二者同进程可能冲突。生产环境应通过最小依赖隔离掉这类无关包，而不是继续依赖 `KMP_DUPLICATE_LIB_OK`
 - 先使用仓库内的 `gunicorn.conf.py`，不要直接沿用 Gunicorn 默认 30 秒超时
 - 当前多轮记忆保存在进程内，生产环境建议先保持单 worker；如果要扩容，需要把对话历史改到 Redis 或数据库
 - Gunicorn 监听 `127.0.0.1:5000`
@@ -267,6 +276,7 @@ gunicorn -c gunicorn.conf.py wsgi:app
 cd /opt/llmrag
 source .venv/bin/activate
 export FLASK_ENV=prod
+pip install -r requirements-prod.txt
 gunicorn -c gunicorn.conf.py wsgi:app
 ```
 

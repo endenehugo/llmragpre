@@ -13,18 +13,26 @@ logger = logging.getLogger(__name__)
 class ChatSingleHandler:
 
     def __init__(self):
-        llm=ChatTongyi(
-            streaming = True,
-            model = "qwen-plus",
-            temperature = 0.8,
-            top_p =0.7,
+        self.chain = None
+
+    def _get_chain(self):
+        if self.chain is not None:
+            return self.chain
+
+        llm = ChatTongyi(
+            streaming=True,
+            model="qwen-plus",
+            temperature=0.8,
+            top_p=0.7,
         )
         prompt = ChatPromptTemplate.from_template(
             "你是一个专业的助手，你的回答必须符合中文的语法规范，用户的问题：{query}",
         )
         parser = StrOutputParser()
-        self.chain = prompt|llm|parser
+        self.chain = prompt | llm | parser
+        return self.chain
+
     def chat_single(self):
         query = request.args.get("query", default="None", type=str)
-        result = self.chain.invoke({"query": query})
+        result = self._get_chain().invoke({"query": query})
         return success_message(result)

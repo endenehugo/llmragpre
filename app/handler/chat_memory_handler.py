@@ -16,6 +16,14 @@ logger = logging.getLogger(__name__)
 
 class ChatMemoryHandler:
     def __init__(self):
+        self.prompt = None
+        self.memory = None
+        self.chain = None
+
+    def _ensure_initialized(self):
+        if self.chain is not None:
+            return
+
         llm = ChatTongyi(
             streaming = True,
             model = "qwen-plus",
@@ -38,6 +46,7 @@ class ChatMemoryHandler:
 
     def chat_memory(self):
         try:
+            self._ensure_initialized()
             # 修复：从 POST 请求体获取数据，而不是 GET 参数
             data = request.get_json()
             logger.info(f"收到请求数据: {data}")

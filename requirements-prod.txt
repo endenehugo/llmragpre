@@ -1,0 +1,12 @@
+Flask==3.0.0
+flask-cors>=4.0.0
+injector==0.22.0
+langchain==0.3.25
+langchain-core==0.3.86
+langchain-community==0.3.25
+dashscope
+faiss-cpu==1.8.0.post1
+python-docx==1.1.2
+requests>=2.31.0,<3.0.0
+pydantic>=2.7.4,<3.0.0
+gunicorn>=22.0.0,<23.0.0

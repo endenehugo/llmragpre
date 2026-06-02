@@ -20,6 +20,18 @@ class ChatAgentHandler:
     uniqueComputerUtils: UniqueComputerUtils
 
     def __post_init__(self):
+        self.llm = None
+        self.tool_dic = None
+        self.embeddings = None
+        self.db = None
+        self.retriever = None
+        self.prompt = None
+        self.memory = None
+
+    def _ensure_initialized(self):
+        if self.llm is not None:
+            return
+
         self.llm=ChatTongyi(
             streaming = True,
             model = "qwen-plus",
@@ -74,6 +86,7 @@ class ChatAgentHandler:
 
     def chat_agent(self):
         try:
+            self._ensure_initialized()
             data = request.get_json()
             logger.info(f"收到请求数据: {data}")
             

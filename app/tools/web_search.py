@@ -2,7 +2,7 @@ import os
 from typing import Any, Type
 
 import requests
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
 
 
@@ -13,8 +13,8 @@ class WebSearchInput(BaseModel):
 class WebSearchTool(BaseTool):
 	"""基于秘塔 AI 的网页搜索工具。"""
 
-	name = "web_search_tool"
-	description = "当需要查询最新网页信息、新闻、官网说明或互联网资料时使用该工具"
+	name: str = "web_search_tool"
+	description: str = "当需要查询最新网页信息、新闻、官网说明或互联网资料时使用该工具"
 	args_schema: Type[BaseModel] = WebSearchInput
 
 	def _run(self, *args: Any, **kwargs: Any) -> str:

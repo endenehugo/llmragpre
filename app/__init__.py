@@ -1,7 +1,13 @@
+import os
+
+env = os.environ.get("FLASK_ENV", "dev")
+
+if os.name == "nt" and env in {"dev", "test"}:
+    os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 from flask import Flask
 from flask_cors import CORS
 from injector import Injector
-import os
 from app.router import Router
 from app.module import ExtensionModule
 from app.utils import ResourceUtils
@@ -18,7 +24,6 @@ CORS(app, resources={
     }
 })
 
-env = os.environ.get("FLASK_ENV", "dev")
 allowed_envs = ["dev", "test", "pre","prod"]
 if env not in allowed_envs:
     raise ValueError(f"无效的FLASK_ENV值: '{env}'. 允许的值为: {', '.join(allowed_envs)}.")
