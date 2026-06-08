@@ -32,7 +32,7 @@ class DocumentIndexService:
                 continue
 
             for chunk_index, chunk in enumerate(self._chunk_text(content)):
-                texts.append(chunk)
+                texts.append(self._build_index_text(document, chunk))
                 metadatas.append({
                     "conversation_id": conversation_id,
                     "document_id": document.get("document_id"),
@@ -55,11 +55,7 @@ class DocumentIndexService:
         docs = []
         conversation_db = self._load_conversation_db(conversation_id)
         if conversation_db is not None:
-            retriever = conversation_db.as_retriever(
-                search_type="similarity_score_threshold",
-                search_kwargs={"k": limit, "score_threshold": 0.35},
-            )
-            docs = retriever.get_relevant_documents(query)
+            docs = self._search_conversation_docs(conversation_db, query, limit)
 
         if not docs:
             public_retriever = self._load_public_retriever()
@@ -67,6 +63,29 @@ class DocumentIndexService:
                 docs = public_retriever.get_relevant_documents(query)
 
         return "\n\n".join(doc.page_content for doc in docs)
+
+    @staticmethod
+    def _build_index_text(document: dict, chunk: str) -> str:
+        original_name = (document.get("original_name") or "").strip()
+        if not original_name:
+            return chunk
+        return f"文件名：{original_name}\n{chunk}"
+
+    def _search_conversation_docs(self, conversation_db, query: str, limit: int):
+        threshold_retriever = conversation_db.as_retriever(
+            search_type="similarity_score_threshold",
+            search_kwargs={"k": limit, "score_threshold": 0.35},
+        )
+        docs = threshold_retriever.get_relevant_documents(query)
+        if docs:
+            return docs
+
+        # 文件概述类问题与超短文本的向量相似度常常偏低，兜底返回最相关分片。
+        fallback_retriever = conversation_db.as_retriever(
+            search_type="similarity",
+            search_kwargs={"k": limit},
+        )
+        return fallback_retriever.get_relevant_documents(query)
 
     def delete_conversation_index(self, conversation_id: str) -> None:
         index_dir = self._get_conversation_index_dir(conversation_id)
