@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
+from typing import Any
 
 from flask import current_app
 from injector import inject
@@ -141,7 +142,7 @@ class ConversationChatService:
         messages.extend(self._build_multimodal_history(history))
         messages.append(HumanMessage(content=content_parts))
         response = self.vl_llm.invoke(messages)
-        return response.content
+        return self._extract_multimodal_text(response.content)
 
     def _resolve_image_path(self, image_url: str) -> str:
         conversation_id, filename = self._parse_image_url(image_url)
@@ -177,6 +178,26 @@ class ConversationChatService:
     @classmethod
     def _strip_image_markdown(cls, content: str) -> str:
         return cls._IMAGE_MARKDOWN_PATTERN.sub("", content or "").strip()
+
+    @classmethod
+    def _extract_multimodal_text(cls, content: Any) -> str:
+        """从多模态响应的 content 中提取纯文本。
+
+        DashScope MultiModalConversation 返回的 assistant content 格式为：
+            [{"text": "回答内容"}]
+        需要把这种列表展开成纯字符串。
+        """
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            parts = []
+            for item in content:
+                if isinstance(item, dict):
+                    parts.append(str(item.get("text", "") or ""))
+                elif isinstance(item, str):
+                    parts.append(item)
+            return "".join(parts)
+        return str(content)
 
     def _build_multimodal_history(self, history: list[dict]) -> list:
         messages = []
