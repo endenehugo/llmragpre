@@ -1,6 +1,6 @@
 # LLM RAG 项目
 
-这是一个基于 Flask、LangChain 和 LangGraph 的中文问答项目，集成了单轮对话、多轮记忆对话、RAG 检索增强问答，以及带工具调用能力的 Agent。项目当前还支持会话持久化、历史会话切换，以及按会话上传 txt、pdf、docx 文档后进行文档问答。项目自带一个简单前端页面，可直接在浏览器中进行交互。
+这是一个基于 Flask、LangChain 和 LangGraph 的中文问答项目，集成了单轮对话、多轮记忆对话、RAG 检索增强问答、多模态图片识别，以及带工具调用能力的 Agent。项目当前还支持会话持久化、历史会话切换、按会话上传 txt/pdf/docx 文档后进行文档问答，以及上传图片后进行图片内容识别。项目自带一个简单前端页面，可直接在浏览器中进行交互。
 
 ## 功能概览
 
@@ -10,32 +10,36 @@
 - Agent 智能问答：通过 `/chat/agent` 结合大模型、检索上下文和工具调用完成更复杂的问题处理。
 - 会话持久化：通过 `/conversation/*` 接口创建、列出、查看和继续历史会话。
 - 文档上传问答：支持把 txt、pdf、docx 文档绑定到某个会话，并基于会话内文档进行问答。
+- 图片识别问答：支持上传 png、jpg、jpeg、webp 图片，由多模态模型识别图片内容并回答。
+- API Key 检测：`GET /api/keycheck` 可实时检测 DashScope Key 是否有效及多模态权限。
 - Web 页面入口：通过 `/` 渲染前端页面，便于本地调试和手工验证接口。
 
 ## 当前使用的模型与能力
 
 - 对话模型：阿里云通义千问 `qwen-plus`
+- 多模态模型：阿里云通义千问 `qwen-vl-plus`（图片识别时自动切换）
 - 向量模型：DashScope Embedding `text-embedding-v3`
 - 向量库：FAISS
 - Agent 工具：
-	- `MultiplyTool`：简单乘法计算
-	- `WebSearchTool`：联网搜索公开网页信息
-	- `WordDocumentTool`：生成或整理 Word 文档
+- `MultiplyTool`：简单乘法计算
+- `WebSearchTool`：联网搜索公开网页信息
+- `WordDocumentTool`：生成或整理 Word 文档
 
 ## 项目结构
 
 ```text
 .
 ├── app/
-│   ├── handler/                # 路由处理器：单轮、记忆、RAG、Agent、首页、测试
+│   ├── handler/                # 路由处理器：会话、文档、图片、Agent、RAG 等
 │   ├── repository/             # MySQL 持久化访问层
 │   ├── response/               # 统一响应封装
 │   ├── router/                 # Flask 路由注册
 │   ├── services/               # 会话存储、文档解析、索引构建、对话编排
 │   ├── static/                 # 前端静态资源
 │   ├── templates/              # 前端页面模板
+│   ├── test_tools/             # 服务与工具的窄测试脚本
 │   ├── tools/                  # Agent 工具实现
-│   ├── utils/                  # 资源路径、设备信息等工具
+│   ├── utils/                  # 资源路径、API Key 检测等工具
 │   ├── __init__.py             # Flask app 初始化与配置加载
 │   └── module.py               # Injector 模块
 ├── config/                     # dev / test / pre / prod 配置
@@ -44,13 +48,17 @@
 │   ├── faiss_index/            # 当前 RAG 使用的向量索引
 │   ├── faiss_index_steffen/    # 备用或历史向量索引
 │   ├── faiss_index_uploads/    # 按会话生成的上传文档向量索引
+│   ├── generated_docs/         # 工具生成的 Word 文档
+│   ├── images/                 # 静态资源图片
 │   ├── parsed_docs/            # 上传文档解析后的纯文本
 │   ├── uploads/                # 上传原始文件
+│   │   └── images/             # 按会话存储的上传图片
 │   ├── 电商产品数据.txt         # RAG 基础业务文本
 │   ├── chat_history.json       # 对话历史数据
 │   └── memory.txt              # 记忆相关资源
-├── app/test_tools/             # 服务与工具的窄测试脚本
+├── test_tools/                 # 独立工具测试脚本与前端回归断言
 ├── run.py                      # 本地启动入口
+├── wsgi.py                     # Gunicorn 入口
 └── requirements.txt            # Python 依赖
 ```
 
@@ -58,7 +66,7 @@
 
 - Python 3.8 及以上
 - 建议使用虚拟环境
-- 需要可用的 DashScope API Key
+- 需要可用的 DashScope API Key（需开通 qwen-plus、qwen-vl-plus 和 text-embedding-v3）
 
 ## 安装依赖
 
@@ -129,13 +137,16 @@ python run.py
 
 ```python
 PORT = 5000
-DASHSCOPE_API_KEY = "your_key"
-METASO_API_KEY = "optional"
+DASHSCOPE_API_KEY = os.environ.get("DASHSCOPE_API_KEY", "your_key")
+METASO_API_KEY = os.environ.get("METASO_API_KEY", "optional")
+MULTIMODAL_MODEL = os.environ.get("MULTIMODAL_MODEL", "qwen-vl-plus")
+IMAGE_ALLOWED_EXTENSIONS = ["png", "jpg", "jpeg", "webp"]
 ```
 
 说明：
 
-- `DASHSCOPE_API_KEY` 为当前项目的核心配置。
+- `DASHSCOPE_API_KEY` 为当前项目的核心配置，优先从环境变量读取。
+- `MULTIMODAL_MODEL` 为图片识别使用的多模态模型，默认 `qwen-vl-plus`。
 - `METASO_API_KEY` 为可选配置，存在时会在应用启动时写入环境变量。
 - MySQL 相关配置默认从环境变量读取，未设置时会回落到各环境配置文件中的默认值。
 - 生产环境不要把真实密钥提交到仓库中，建议改为环境变量或独立配置注入。
@@ -147,6 +158,25 @@ METASO_API_KEY = "optional"
 ```bash
 python run.py
 ```
+
+启动时会自动运行 API Key 检测，打印以下格式的报告：
+
+```text
+============================================================
+  DashScope API Key 检测报告
+============================================================
+  ✅ PASS  Key 配置
+         Key: sk-****xxxx  |  来源: 系统环境变量 DASHSCOPE_API_KEY
+  ✅ PASS  Embedding API
+         DashScope Key 有效，文本 Embedding 可正常调用。
+  ✅ PASS  多模态 API
+         qwen-vl-plus 多模态模型可正常调用，支持图片识别。
+------------------------------------------------------------
+  结论：所有检测通过，API Key 可用。
+============================================================
+```
+
+如果检测未通过，会显示具体的失败项并给出修复提示。
 
 默认监听地址：
 
@@ -205,7 +235,7 @@ GET /chat/single?query=你好
 
 ```json
 {
-	"query": "帮我总结一下昨天的对话"
+"query": "帮我总结一下昨天的对话"
 }
 ```
 
@@ -217,7 +247,7 @@ GET /chat/single?query=你好
 
 ```json
 {
-	"query": "这款电商产品的主要卖点是什么？"
+"query": "这款电商产品的主要卖点是什么？"
 }
 ```
 
@@ -234,7 +264,7 @@ GET /chat/single?query=你好
 
 ```json
 {
-	"query": "帮我搜索一下某品牌官网，并整理成 Word 文档"
+"query": "帮我搜索一下某品牌官网，并整理成 Word 文档"
 }
 ```
 
@@ -252,8 +282,8 @@ GET /chat/single?query=你好
 
 ```json
 {
-	"title": "新对话",
-	"mode": "agent"
+"title": "新对话",
+"mode": "agent"
 }
 ```
 
@@ -274,7 +304,7 @@ GET /chat/single?query=你好
 GET /conversation/detail?conversation_id=conv_xxx
 ```
 
-### 10. 会话问答
+### 10. 会话问答（含图片）
 
 - 方法：`POST`
 - 路径：`/conversation/chat`
@@ -282,9 +312,22 @@ GET /conversation/detail?conversation_id=conv_xxx
 
 ```json
 {
-	"conversation_id": "conv_xxx",
-	"query": "请总结我刚上传的文档",
-	"mode": "agent"
+"conversation_id": "conv_xxx",
+"query": "请总结我刚上传的文档",
+"mode": "agent"
+}
+```
+
+带图片的请求：
+
+```json
+{
+"conversation_id": "conv_xxx",
+"query": "请描述这张图片里的内容",
+"mode": "agent",
+"image_urls": [
+"/conversation/image/conv_xxx/img_xxx.png"
+]
 }
 ```
 
@@ -292,6 +335,7 @@ GET /conversation/detail?conversation_id=conv_xxx
 
 - `mode` 支持 `agent`、`rag`、`memory`。
 - `agent` 和 `rag` 会优先读取当前会话下已索引的文档上下文。
+- 当 `image_urls` 非空时，自动切换到多模态模型 `qwen-vl-plus`，此时不走 Agent 工具调用链。
 - 当前会话检索已支持两类兜底优化：短文本概述类问题的无阈值回退，以及按文件名提问时的文件名锚点召回。
 
 ### 11. 上传会话文档
@@ -315,14 +359,60 @@ GET /conversation/detail?conversation_id=conv_xxx
 
 ```json
 {
-	"document_id": "doc_xxx"
+"document_id": "doc_xxx"
 }
+```
+
+### 13. 上传图片
+
+- 方法：`POST`
+- 路径：`/conversation/image/upload`
+- 请求体：`multipart/form-data`
+- 字段：`conversation_id`、`file`
+
+说明：
+
+- 支持 png、jpg、jpeg、webp。
+- 上传成功后返回 `image_url`，可用于后续 `/conversation/chat` 的 `image_urls` 参数。
+
+### 14. 访问图片
+
+- 方法：`GET`
+- 路径：`/conversation/image/<conversation_id>/<filename>`
+
+### 15. API Key 检测
+
+- 方法：`GET`
+- 路径：`/api/keycheck`
+
+返回示例：
+
+```json
+{
+"code": "success",
+"message": "所有检测通过",
+"data": {
+"all_passed": true,
+"results": [
+{"name": "Key 配置", "passed": true, "message": "Key: sk-****xxxx  |  来源: 系统环境变量 DASHSCOPE_API_KEY"},
+{"name": "Embedding API", "passed": true, "message": "DashScope Key 有效，文本 Embedding 可正常调用。"},
+{"name": "多模态 API", "passed": true, "message": "qwen-vl-plus 多模态模型可正常调用，支持图片识别。"}
+]
+}
+}
+```
+
+也可在命令行独立运行：
+
+```powershell
+python -m app.utils.api_key_checker
 ```
 
 ## 知识库与资源说明
 
 - RAG 默认读取 `resources/faiss_index/` 下的本地向量索引。
 - 会话文档问答读取 `resources/faiss_index_uploads/` 下按会话生成的索引。
+- 上传图片保存在 `resources/uploads/images/<conversation_id>/` 下。
 - 原始业务数据示例位于 `resources/电商产品数据.txt`。
 - 如果你更新了业务文本，但没有重建索引，那么 `/chat/rag` 和 `/chat/agent` 读取到的仍然会是旧知识。
 - 如果你修改了历史上传文档的索引策略，旧会话下的文档需要重新上传或重建索引后才会生效。
@@ -331,31 +421,51 @@ GET /conversation/detail?conversation_id=conv_xxx
 
 仓库中提供了工具测试脚本：
 
-- `test_tools/test_web_search_tool.py`
-- `test_tools/test_word_document_tool.py`
-
-另外还提供了会话文档检索的窄测试：
-
+- `app/test_tools/test_web_search_tool.py`
+- `app/test_tools/test_word_document_tool.py`
 - `app/test_tools/test_document_index_service.py`
+- `app/test_tools/test_image_multimodal_service.py`
 
-可用于单独验证工具是否可用。
+前端回归断言：
+
+- `test_tools/test_frontend_message_render.js`
+
+可用于单独验证工具和前端渲染是否正常。
 
 示例：
 
 ```powershell
-D:\conda\python.exe -m unittest app.test_tools.test_document_index_service
+# Python 单元测试
+D:\conda\python.exe -m pytest app/test_tools/test_image_multimodal_service.py -v
+
+# 前端回归断言
+node test_tools/test_frontend_message_render.js
 ```
 
 ## 文档问答排查提示
 
-如果出现“文档已上传并显示 indexed，但回答仍像没读到文件”的情况，优先按以下顺序排查：
+如果出现"文档已上传并显示 indexed，但回答仍像没读到文件"的情况，优先按以下顺序排查：
 
 - 先确认 `resources/parsed_docs/` 下是否已经生成了解析后的文本。
 - 再确认会话索引是否已经写入 `resources/faiss_index_uploads/`。
-- 如果问题是“这个文件里有什么”“请概述一下内容”，要优先怀疑召回阈值过严。
-- 如果问题是“总结 test.docx 内容”这类按文件名提问，要优先检查索引文本是否包含文件名锚点。
+- 如果问题是"这个文件里有什么""请概述一下内容"，要优先怀疑召回阈值过严。
+- 如果问题是"总结 test.docx 内容"这类按文件名提问，要优先检查索引文本是否包含文件名锚点。
 
 更完整的排错复盘见：`docs/2026-06-08-document-read-debug-summary.md`
+
+## 图片识别排查提示
+
+如果图片问答没有返回预期结果，优先按以下顺序排查：
+
+- 访问 `GET /api/keycheck` 确认 Key 和多模态权限正常。
+- 确认图片尺寸不小于 10×10 像素（模型硬限制）。
+- 确认图片格式为 png、jpg、jpeg 或 webp。
+- 如果返回 `dict can not be used as parameter`，说明当前版本存在多模态响应格式解析缺陷，需更新到最新代码。
+
+完整的开发设计与联调修复记录见：
+
+- `docs/2026-06-09-image-recognition-development.md`
+- `docs/2026-06-09-image-recognition-debug.md`
 
 ## 部署建议
 
