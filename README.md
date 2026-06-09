@@ -1,6 +1,6 @@
 # LLM RAG 项目
 
-这是一个基于 Flask、LangChain 和 LangGraph 的中文问答项目，集成了单轮对话、多轮记忆对话、RAG 检索增强问答，以及带工具调用能力的 Agent。项目自带一个简单前端页面，可直接在浏览器中进行交互。
+这是一个基于 Flask、LangChain 和 LangGraph 的中文问答项目，集成了单轮对话、多轮记忆对话、RAG 检索增强问答，以及带工具调用能力的 Agent。项目当前还支持会话持久化、历史会话切换，以及按会话上传 txt、pdf、docx 文档后进行文档问答。项目自带一个简单前端页面，可直接在浏览器中进行交互。
 
 ## 功能概览
 
@@ -8,6 +8,8 @@
 - 多轮记忆对话：通过 `/chat/memory` 保存上下文历史，适合连续追问。
 - RAG 检索问答：通过 `/chat/rag` 从本地 FAISS 索引中召回知识片段后再生成回答。
 - Agent 智能问答：通过 `/chat/agent` 结合大模型、检索上下文和工具调用完成更复杂的问题处理。
+- 会话持久化：通过 `/conversation/*` 接口创建、列出、查看和继续历史会话。
+- 文档上传问答：支持把 txt、pdf、docx 文档绑定到某个会话，并基于会话内文档进行问答。
 - Web 页面入口：通过 `/` 渲染前端页面，便于本地调试和手工验证接口。
 
 ## 当前使用的模型与能力
@@ -26,8 +28,10 @@
 .
 ├── app/
 │   ├── handler/                # 路由处理器：单轮、记忆、RAG、Agent、首页、测试
+│   ├── repository/             # MySQL 持久化访问层
 │   ├── response/               # 统一响应封装
 │   ├── router/                 # Flask 路由注册
+│   ├── services/               # 会话存储、文档解析、索引构建、对话编排
 │   ├── static/                 # 前端静态资源
 │   ├── templates/              # 前端页面模板
 │   ├── tools/                  # Agent 工具实现
@@ -35,13 +39,17 @@
 │   ├── __init__.py             # Flask app 初始化与配置加载
 │   └── module.py               # Injector 模块
 ├── config/                     # dev / test / pre / prod 配置
+├── docs/                       # 设计文档与问题复盘
 ├── resources/
 │   ├── faiss_index/            # 当前 RAG 使用的向量索引
 │   ├── faiss_index_steffen/    # 备用或历史向量索引
+│   ├── faiss_index_uploads/    # 按会话生成的上传文档向量索引
+│   ├── parsed_docs/            # 上传文档解析后的纯文本
+│   ├── uploads/                # 上传原始文件
 │   ├── 电商产品数据.txt         # RAG 基础业务文本
 │   ├── chat_history.json       # 对话历史数据
 │   └── memory.txt              # 记忆相关资源
-├── test_tools/                 # 工具级测试脚本
+├── app/test_tools/             # 服务与工具的窄测试脚本
 ├── run.py                      # 本地启动入口
 └── requirements.txt            # Python 依赖
 ```
@@ -86,7 +94,7 @@ pip install -r requirements.txt
 
 ## 配置说明
 
-当前项目不是通过 `.env` 自动加载配置，而是通过环境变量 `FLASK_ENV` 选择对应配置文件：
+当前项目会先加载 `.env`，再通过环境变量 `FLASK_ENV` 选择对应配置文件：
 
 - `dev` 对应 `config/config_dev.py`
 - `test` 对应 `config/config_test.py`
@@ -97,10 +105,11 @@ pip install -r requirements.txt
 
 ```python
 env = os.environ.get("FLASK_ENV", "dev")
+load_dotenv()
 app.config.from_object(f"config.config_{env}")
 ```
 
-因此你需要先设置 `FLASK_ENV`，再启动服务。
+因此你可以把密钥和数据库连接信息写进 `.env`，同时通过 `FLASK_ENV` 切换配置文件。
 
 Windows PowerShell:
 
@@ -128,6 +137,7 @@ METASO_API_KEY = "optional"
 
 - `DASHSCOPE_API_KEY` 为当前项目的核心配置。
 - `METASO_API_KEY` 为可选配置，存在时会在应用启动时写入环境变量。
+- MySQL 相关配置默认从环境变量读取，未设置时会回落到各环境配置文件中的默认值。
 - 生产环境不要把真实密钥提交到仓库中，建议改为环境变量或独立配置注入。
 
 ## 启动项目
@@ -234,11 +244,88 @@ GET /chat/single?query=你好
 - 当问题涉及实时信息、官网资料或网页内容时，会优先尝试调用 `WebSearchTool`。
 - 当问题涉及文档导出时，会尝试调用 `WordDocumentTool`。
 
+### 7. 创建会话
+
+- 方法：`POST`
+- 路径：`/conversation/create`
+- 请求体：JSON
+
+```json
+{
+	"title": "新对话",
+	"mode": "agent"
+}
+```
+
+### 8. 查询会话列表
+
+- 方法：`GET`
+- 路径：`/conversation/list`
+
+### 9. 查询会话详情
+
+- 方法：`GET`
+- 路径：`/conversation/detail`
+- 参数：`conversation_id`
+
+示例：
+
+```text
+GET /conversation/detail?conversation_id=conv_xxx
+```
+
+### 10. 会话问答
+
+- 方法：`POST`
+- 路径：`/conversation/chat`
+- 请求体：JSON
+
+```json
+{
+	"conversation_id": "conv_xxx",
+	"query": "请总结我刚上传的文档",
+	"mode": "agent"
+}
+```
+
+说明：
+
+- `mode` 支持 `agent`、`rag`、`memory`。
+- `agent` 和 `rag` 会优先读取当前会话下已索引的文档上下文。
+- 当前会话检索已支持两类兜底优化：短文本概述类问题的无阈值回退，以及按文件名提问时的文件名锚点召回。
+
+### 11. 上传会话文档
+
+- 方法：`POST`
+- 路径：`/document/upload`
+- 请求体：`multipart/form-data`
+- 字段：`conversation_id`、`file`
+
+说明：
+
+- 当前支持 `txt`、`pdf`、`docx`。
+- `doc` 会返回明确提示，要求先转换为 `docx`。
+- 上传成功后，后端会自动解析文本并重建该会话对应的向量索引。
+
+### 12. 删除会话文档
+
+- 方法：`POST`
+- 路径：`/document/delete`
+- 请求体：JSON
+
+```json
+{
+	"document_id": "doc_xxx"
+}
+```
+
 ## 知识库与资源说明
 
 - RAG 默认读取 `resources/faiss_index/` 下的本地向量索引。
+- 会话文档问答读取 `resources/faiss_index_uploads/` 下按会话生成的索引。
 - 原始业务数据示例位于 `resources/电商产品数据.txt`。
 - 如果你更新了业务文本，但没有重建索引，那么 `/chat/rag` 和 `/chat/agent` 读取到的仍然会是旧知识。
+- 如果你修改了历史上传文档的索引策略，旧会话下的文档需要重新上传或重建索引后才会生效。
 
 ## 工具测试
 
@@ -247,7 +334,28 @@ GET /chat/single?query=你好
 - `test_tools/test_web_search_tool.py`
 - `test_tools/test_word_document_tool.py`
 
+另外还提供了会话文档检索的窄测试：
+
+- `app/test_tools/test_document_index_service.py`
+
 可用于单独验证工具是否可用。
+
+示例：
+
+```powershell
+D:\conda\python.exe -m unittest app.test_tools.test_document_index_service
+```
+
+## 文档问答排查提示
+
+如果出现“文档已上传并显示 indexed，但回答仍像没读到文件”的情况，优先按以下顺序排查：
+
+- 先确认 `resources/parsed_docs/` 下是否已经生成了解析后的文本。
+- 再确认会话索引是否已经写入 `resources/faiss_index_uploads/`。
+- 如果问题是“这个文件里有什么”“请概述一下内容”，要优先怀疑召回阈值过严。
+- 如果问题是“总结 test.docx 内容”这类按文件名提问，要优先检查索引文本是否包含文件名锚点。
+
+更完整的排错复盘见：`docs/2026-06-08-document-read-debug-summary.md`
 
 ## 部署建议
 
