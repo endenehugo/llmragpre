@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -12,6 +13,8 @@ from app.repository import DatabaseManager, ConversationRepository, MessageRepos
 @inject
 @dataclass
 class ConversationStoreService:
+    _IMAGE_MARKDOWN_PATTERN = re.compile(r"!\[[^\]]*\]\((/conversation/image/[^)\s]+)\)")
+
     def __post_init__(self):
         self.database_manager = DatabaseManager()
         self.conversation_repository = ConversationRepository()
@@ -114,7 +117,8 @@ class ConversationStoreService:
 
                 title = conversation.title
                 if conversation.message_count == 0 and title == "新对话":
-                    title = user_content.strip().replace("\n", " ")[:20] or "新对话"
+                    text_for_title = self._strip_image_markdown(user_content).replace("\n", " ").strip()
+                    title = text_for_title[:20] or "图片消息"
 
                 preview = assistant_content.strip().replace("\n", " ")[:500]
                 self.conversation_repository.update_summary(
@@ -223,3 +227,7 @@ class ConversationStoreService:
             "created_at": item.created_at.isoformat(),
             "updated_at": item.updated_at.isoformat(),
         }
+
+    @classmethod
+    def _strip_image_markdown(cls, content: str) -> str:
+        return cls._IMAGE_MARKDOWN_PATTERN.sub("", content or "")

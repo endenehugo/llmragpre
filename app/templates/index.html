@@ -91,11 +91,16 @@
 
             <section class="composer-panel">
                 <div id="buttonDiv" class="button-group"></div>
+                <input type="file" id="imageInput" class="hidden-file-input" accept="image/png,image/jpeg,image/webp">
+                <div id="imagePreviewContainer" class="image-preview-container"></div>
 
                 <div class="chat-form">
                     <div class="composer-frame">
                         <textarea class="input" placeholder="给智能助手发消息" rows="1" data-min-rows="1"></textarea>
                         <div class="composer-actions">
+                            <button type="button" class="icon-button icon-button-text" id="triggerImageUpload" aria-label="上传图片">
+                                <span>图片</span>
+                            </button>
                             <button type="button" class="icon-button" id="switchInputType" aria-label="切换输入方式">
                                 <img src="/static/images/keyboard.png" alt="switch input">
                             </button>

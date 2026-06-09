@@ -7,6 +7,7 @@
         currentConversationMessages: [],
         currentConversationDocuments: [],
         pendingConversationPromise: null,
+        pendingImageUrls: [],
     };
 
     function apiRequest(options) {
@@ -62,6 +63,87 @@
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
+    }
+
+    function isSafeImageUrl(url) {
+        return /^\/conversation\/image\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(url || '');
+    }
+
+    function appendTextWithLineBreaks($container, text) {
+        var parts = String(text || '').split('\n');
+        parts.forEach(function (part, index) {
+            if (part) {
+                $container.append(document.createTextNode(part));
+            }
+            if (index < parts.length - 1) {
+                $container.append($('<br/>'));
+            }
+        });
+    }
+
+    function renderMessageHtml(text) {
+        var normalized = normalizeMessage(text || '');
+        var $container = $('<div/>');
+        var regex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+        var lastIndex = 0;
+        var match;
+
+        while ((match = regex.exec(normalized)) !== null) {
+            var fullMatch = match[0];
+            var alt = match[1] || 'image';
+            var url = match[2] || '';
+            appendTextWithLineBreaks($container, normalized.slice(lastIndex, match.index));
+
+            if (isSafeImageUrl(url)) {
+                $container.append($('<img/>', {
+                    src: url,
+                    alt: escapeHtml(alt),
+                    'class': 'chat-inline-image',
+                    loading: 'lazy',
+                }));
+            } else {
+                appendTextWithLineBreaks($container, fullMatch);
+            }
+            lastIndex = match.index + fullMatch.length;
+        }
+
+        appendTextWithLineBreaks($container, normalized.slice(lastIndex));
+        return $container.html();
+    }
+
+    function composeUserMessage(text, imageUrls) {
+        var lines = [];
+        (imageUrls || []).forEach(function (url) {
+            lines.push('![image](' + url + ')');
+        });
+        if (text) {
+            lines.push(text);
+        }
+        return lines.join('\n');
+    }
+
+    function renderImagePreview() {
+        var $container = $('#imagePreviewContainer');
+        $container.empty();
+
+        if (!state.pendingImageUrls.length) {
+            $container.hide();
+            return;
+        }
+
+        state.pendingImageUrls.forEach(function (url, index) {
+            var $item = $('<div/>', { 'class': 'image-preview-item', 'data-index': index });
+            $item.append($('<img/>', { src: url, alt: 'pending image', loading: 'lazy' }));
+            $item.append($('<button/>', {
+                type: 'button',
+                'class': 'image-preview-remove',
+                'data-index': index,
+                text: '×',
+            }));
+            $container.append($item);
+        });
+
+        $container.css('display', 'flex');
     }
 
     function renderConversationList() {
@@ -134,7 +216,7 @@
         $chatlogs.append(
             $('<div/>', { 'class': classes, 'data-replay': isReplay ? '1' : '0' }).append(
                 $('<div/>', { 'class': 'user-photo' }).append($('<img src="/static/images/ana.JPG" alt="user avatar" />')),
-                $('<p/>', { 'class': 'chat-message', text: text })
+                $('<div/>', { 'class': 'chat-message', html: renderMessageHtml(text) })
             )
         );
         scrollToBottom();
@@ -144,7 +226,7 @@
         $chatlogs.append(
             $('<div/>', { 'class': 'chat friend dynamic-message', 'data-replay': isReplay ? '1' : '0' }).append(
                 $('<div/>', { 'class': 'user-photo' }).append($('<img src="/static/images/ana.JPG" alt="assistant avatar" />')),
-                $('<p/>', { 'class': 'chat-message', text: text })
+                $('<div/>', { 'class': 'chat-message', html: renderMessageHtml(text) })
             )
         );
         scrollToBottom();
@@ -230,6 +312,11 @@
     }
 
     function ensureConversationReady() {
+        if (state.pendingConversationPromise) {
+            return state.pendingConversationPromise.then(function (conversationId) {
+                return conversationId || state.currentConversationId;
+            });
+        }
         if (state.currentConversationId) {
             return $.Deferred().resolve(state.currentConversationId).promise();
         }
@@ -239,7 +326,10 @@
     }
 
     function sendToConversation(conversationId, text) {
-        appendUserMessage(text, false);
+        var imageUrls = state.pendingImageUrls.slice();
+        appendUserMessage(composeUserMessage(text, imageUrls), false);
+        state.pendingImageUrls = [];
+        renderImagePreview();
         setConversationState(true);
         $('#emptyAssistantMessage').hide();
         showLoading();
@@ -250,6 +340,7 @@
             data: JSON.stringify({
                 conversation_id: conversationId,
                 query: text,
+                image_urls: imageUrls,
                 mode: 'agent',
             }),
         }).then(function (data) {
@@ -272,6 +363,59 @@
         });
     }
 
+    function uploadImage(file) {
+        if (!file) {
+            return;
+        }
+        var fileName = (file.name || '').toLowerCase();
+        var mimeType = (file.type || '').toLowerCase();
+        var hasSupportedMime = /^image\/(png|jpeg|webp)$/.test(mimeType);
+        var hasSupportedExtension = /\.(png|jpg|jpeg|webp)$/.test(fileName);
+        if (!hasSupportedMime && !hasSupportedExtension) {
+            $('#uploadHint').text('仅支持 png、jpg、jpeg、webp 图片。');
+            return;
+        }
+
+        return ensureConversationReady().then(function (conversationId) {
+            if (!conversationId) {
+                $('#uploadHint').text('会话初始化失败，无法上传图片。');
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('conversation_id', conversationId);
+            formData.append('file', file);
+            $('#uploadHint').text('正在上传图片，请稍候...');
+
+            return $.ajax({
+                type: 'POST',
+                url: baseUrl + 'conversation/image/upload',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    if (response && response.code && response.code !== 'success') {
+                        $('#uploadHint').text(response.message || '图片上传失败');
+                        return;
+                    }
+                    var imageUrl = response.data && response.data.image_url;
+                    if (!imageUrl) {
+                        $('#uploadHint').text('图片上传失败');
+                        return;
+                    }
+                    state.currentConversationId = conversationId;
+                    state.pendingImageUrls.push(imageUrl);
+                    renderImagePreview();
+                    $('#uploadHint').text('图片已加入当前输入，可直接提问。');
+                },
+                error: function (xhr) {
+                    var message = (xhr.responseJSON && xhr.responseJSON.message) || '图片上传失败';
+                    $('#uploadHint').text(message);
+                },
+            });
+        });
+    }
+
     function openConversation(conversationId) {
         return apiRequest({
             type: 'GET',
@@ -282,9 +426,11 @@
             state.currentConversationId = detail.conversation_id;
             state.currentConversationMessages = detail.messages || [];
             state.currentConversationDocuments = detail.documents || [];
+            state.pendingImageUrls = [];
             setConversationState(state.currentConversationMessages.length > 0);
             renderConversationList();
             renderDocumentList();
+            renderImagePreview();
             renderMessages();
             syncConversationSummary(detail);
             $('#uploadHint').text('支持 txt、pdf、docx。doc 需要先转成 docx。');
@@ -292,7 +438,7 @@
     }
 
     function send(text) {
-        if (!text || !text.trim()) {
+        if ((!text || !text.trim()) && !state.pendingImageUrls.length) {
             return;
         }
         return ensureConversationReady().then(function (conversationId) {
@@ -350,7 +496,7 @@
             return;
         }
         var value = input.value.trim();
-        if (!value) {
+        if (!value && !state.pendingImageUrls.length) {
             return;
         }
         input.value = '';
@@ -375,11 +521,17 @@
             state.currentConversationId = '';
             state.currentConversationMessages = [];
             state.currentConversationDocuments = [];
+            state.pendingImageUrls = [];
+            renderImagePreview();
             createConversation();
         });
 
         $('#triggerUpload').click(function () {
             $('#documentInput').trigger('click');
+        });
+
+        $('#triggerImageUpload').click(function () {
+            $('#imageInput').trigger('click');
         });
 
         $('#documentInput').change(function (event) {
@@ -388,9 +540,23 @@
             event.target.value = '';
         });
 
+        $('#imageInput').change(function (event) {
+            var file = event.target.files && event.target.files[0];
+            uploadImage(file);
+            event.target.value = '';
+        });
+
         $('.conversation-list').on('click', '.conversation-item', function () {
             var conversationId = $(this).data('id');
             openConversation(conversationId);
+        });
+
+        $('.composer-panel').on('click', '.image-preview-remove', function () {
+            var index = Number($(this).data('index'));
+            state.pendingImageUrls = state.pendingImageUrls.filter(function (_, itemIndex) {
+                return itemIndex !== index;
+            });
+            renderImagePreview();
         });
 
         $('.document-list').on('click', '.document-delete', function () {

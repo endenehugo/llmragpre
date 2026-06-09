@@ -31,6 +31,9 @@ class Router:
         bp.add_url_rule('/conversation/list', view_func=self.conversation_handler.list, methods=['GET'])
         bp.add_url_rule('/conversation/detail', view_func=self.conversation_handler.detail, methods=['GET'])
         bp.add_url_rule('/conversation/chat', view_func=self.conversation_handler.chat, methods=['POST'])
+        bp.add_url_rule('/conversation/image/upload', view_func=self.conversation_handler.upload_image, methods=['POST'])
+        bp.add_url_rule('/conversation/image/<conversation_id>/<filename>', view_func=self.conversation_handler.serve_image, methods=['GET'])
+        bp.add_url_rule('/api/keycheck', view_func=self.conversation_handler.api_key_check, methods=['GET'])
         bp.add_url_rule('/document/upload', view_func=self.document_handler.upload, methods=['POST'])
         bp.add_url_rule('/document/delete', view_func=self.document_handler.delete, methods=['POST'])
 
