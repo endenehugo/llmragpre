@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 
 env = os.environ.get("FLASK_ENV", "dev")
-load_dotenv()
+load_dotenv(override=True)
 
 if os.name == "nt" and env in {"dev", "test"}:
     os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
