@@ -1,0 +1,200 @@
+{
+  "main": {
+    "id": "6d395a630a31fa26",
+    "type": "split",
+    "children": [
+      {
+        "id": "6ea0492e4c190d03",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "86db8b6d2e5e01a1",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "docs/rag_evaluation_and_optimization.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "rag_evaluation_and_optimization"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "d2a46834bad5729e",
+    "type": "split",
+    "children": [
+      {
+        "id": "b55a3606cfebda3d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c5d7da07fcf48236",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "87468ce37b98a779",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "79c6b6c232247a9a",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "ae74ea1680a6e728",
+    "type": "split",
+    "children": [
+      {
+        "id": "8840eea82f6dfadf",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "36eca31685b7fd5b",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "docs/rag_evaluation_and_optimization.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "rag_evaluation_and_optimization 的反向链接列表"
+            }
+          },
+          {
+            "id": "9f7f377ca03cdd35",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "docs/rag_evaluation_and_optimization.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "rag_evaluation_and_optimization 的出链列表"
+            }
+          },
+          {
+            "id": "e4e2733111aabb7a",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "c0b02e69600f50b0",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "278a3898a8269e29",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "docs/rag_evaluation_and_optimization.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "rag_evaluation_and_optimization 的大纲"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:新建数据库": false
+    }
+  },
+  "active": "86db8b6d2e5e01a1",
+  "lastOpenFiles": [
+    "app/services/__pycache__/context_verification_service.cpython-312.pyc",
+    "app/services/context_compression_service.py.tmp.18792.2a3cbb757854",
+    "app/services/context_compression_service.py.tmp.18792.66840070b90f",
+    "app/services/context_verification_service.py.tmp.18792.9a7662b5d550",
+    "app/services/context_verification_service.py.tmp.18792.3ce48eb0be6c",
+    "app/services/context_verification_service.py.tmp.18792.67e1da1236c9",
+    "app/services/context_compression_service.py.tmp.18792.a8c67f0a0eca",
+    "app/services/context_compression_service.py.tmp.18792.920119c88e49",
+    "app/services/__pycache__/context_verification_service.cpython-38.pyc",
+    "app/services/__pycache__/context_compression_service.cpython-38.pyc",
+    "requirements.txt.tmp.18792.7151d858087a"
+  ]
+}

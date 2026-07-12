@@ -108,6 +108,10 @@
         }
 
         appendTextWithLineBreaks($container, normalized.slice(lastIndex));
+
+        // 处理引用标记 [N] 样式
+        $container.html($container.html().replace(/\[(\d+)\]/g, '<sup class="citation-ref" data-index="$1">[$1]</sup>'));
+
         return $container.html();
     }
 
@@ -222,14 +226,89 @@
         scrollToBottom();
     }
 
-    function appendAssistantMessage(text, isReplay) {
-        $chatlogs.append(
-            $('<div/>', { 'class': 'chat friend dynamic-message', 'data-replay': isReplay ? '1' : '0' }).append(
-                $('<div/>', { 'class': 'user-photo' }).append($('<img src="/static/images/ana.JPG" alt="assistant avatar" />')),
-                $('<div/>', { 'class': 'chat-message', html: renderMessageHtml(text) })
-            )
+    function appendAssistantMessage(text, isReplay, sources, verification) {
+        var $wrapper = $('<div/>', { 'class': 'chat friend dynamic-message', 'data-replay': isReplay ? '1' : '0' });
+        $wrapper.append(
+            $('<div/>', { 'class': 'user-photo' }).append($('<img src="/static/images/ana.JPG" alt="assistant avatar" />')),
+            $('<div/>', { 'class': 'chat-message', html: renderMessageHtml(text) })
         );
+
+        // 添加来源面板（仅在有来源且不是回放时）
+        if (sources && sources.length > 0 && !isReplay) {
+            var $sourcesPanel = renderSourcesPanel(sources, verification);
+            if ($sourcesPanel) {
+                $wrapper.append($sourcesPanel);
+            }
+        }
+
+        $chatlogs.append($wrapper);
         scrollToBottom();
+    }
+
+    function renderSourcesPanel(sources, verification) {
+        if (!sources || !sources.length) {
+            return null;
+        }
+
+        var $panel = $('<div/>', { 'class': 'sources-panel' });
+        var $header = $('<div/>', { 'class': 'sources-header' })
+            .append($('<span/>', { 'class': 'sources-title', text: '📖 参考来源' }))
+            .append($('<span/>', { 'class': 'sources-toggle', text: '收起 ▲' }));
+        $panel.append($header);
+
+        var $list = $('<div/>', { 'class': 'sources-list' });
+        sources.forEach(function (source, index) {
+            if (!source.content) {
+                return;
+            }
+            var $item = $('<div/>', { 'class': 'source-item' });
+            var displayName = (source.source_name && source.source_name !== '未知文档')
+                ? source.source_name
+                : ('来源 ' + (index + 1));
+            var $headerRow = $('<div/>', { 'class': 'source-header-row' });
+            var citationBadge = '<span class="source-citation-badge">[' + (index + 1) + ']</span>';
+            $headerRow.append(citationBadge + ' ');
+            $headerRow.append($('<span/>', { 'class': 'source-name', text: displayName }));
+            if (source.score !== undefined && source.score !== null) {
+                var scoreValue = typeof source.score === 'number' ? source.score.toFixed(2) : source.score;
+                $headerRow.append($('<span/>', { 'class': 'source-score', text: '相关性: ' + scoreValue }));
+            }
+            $item.append($headerRow);
+
+            // 内容预览（截断）
+            var contentPreview = source.content;
+            if (contentPreview.length > 200) {
+                contentPreview = contentPreview.substring(0, 200) + '...';
+            }
+            $item.append($('<div/>', { 'class': 'source-content-preview', text: contentPreview }));
+            $list.append($item);
+        });
+
+        // 验证状态
+        if (verification) {
+            var riskLabel = { 'low': '低', 'medium': '中', 'high': '高' };
+            var riskClass = 'risk-' + (verification.hallucination_risk || 'low');
+            var $verificationRow = $('<div/>', { 'class': 'source-verification ' + riskClass });
+            var riskText = '幻觉风险: ' + (riskLabel[verification.hallucination_risk] || verification.hallucination_risk || '未知');
+            $verificationRow.append($('<span/>', { 'class': 'verification-label', text: '🔍 ' + riskText }));
+            if (verification.unsupported_claims && verification.unsupported_claims.length > 0) {
+                $verificationRow.append($('<br/>'));
+                $verificationRow.append($('<span/>', { 'class': 'verification-detail', text: '⚠️ ' + verification.unsupported_claims.join('; ') }));
+            }
+            $panel.append($verificationRow);
+        }
+
+        $panel.append($list);
+
+        // 展开/收起交互
+        $header.on('click', function () {
+            $list.slideToggle();
+            var $toggle = $panel.find('.sources-toggle');
+            var isCollapsed = $list.is(':hidden');
+            $toggle.text(isCollapsed ? '展开 ▼' : '收起 ▲');
+        });
+
+        return $panel;
     }
 
     function syncConversationSummary(detail) {
@@ -267,10 +346,10 @@
         $('#workspaceSubtitle').text(detail ? '当前会话已持久化，可继续聊天或上传文档。' : '会话、文档和历史记录都会自动持久化。');
     }
 
-    function newRecievedMessage(messageText) {
+    function newRecievedMessage(messageText, sources, verification) {
         var normalizedMessage = normalizeMessage(messageText);
         $('#emptyAssistantMessage').hide();
-        appendAssistantMessage(normalizedMessage, false);
+        appendAssistantMessage(normalizedMessage, false, sources, verification);
     }
 
     function loadConversationList() {
@@ -345,7 +424,11 @@
             }),
         }).then(function (data) {
             hideLoading();
-            newRecievedMessage(data.message);
+            newRecievedMessage(
+                data.message,
+                data.data && data.data.sources,
+                data.data && data.data.verification
+            );
             state.currentConversationId = conversationId;
             state.currentConversationMessages = (data.data.conversation && data.data.conversation.messages) || state.currentConversationMessages;
             state.currentConversationDocuments = (data.data.conversation && data.data.conversation.documents) || state.currentConversationDocuments;

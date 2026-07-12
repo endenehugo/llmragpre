@@ -9,6 +9,8 @@ from .interview_simulation_service import InterviewSimulationService
 from .image_analysis_service import ImageAnalysisService
 from .builtin_knowledge_service import BuiltinKnowledgeService
 from .export_service import ExportService
+from .context_compression_service import ContextCompressionService
+from .context_verification_service import ContextVerificationService
 
 __all__ = [
     "DocumentParserService",
@@ -22,4 +24,6 @@ __all__ = [
     "ImageAnalysisService",
     "BuiltinKnowledgeService",
     "ExportService",
+    "ContextCompressionService",
+    "ContextVerificationService",
 ]

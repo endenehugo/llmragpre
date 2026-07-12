@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from flask import current_app
@@ -13,6 +13,8 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from app.services.conversation_store_service import ConversationStoreService
 from app.services.document_index_service import DocumentIndexService
+from app.services.context_compression_service import ContextCompressionService
+from app.services.context_verification_service import ContextVerificationService
 from app.tools import MultiplyTool, WebSearchTool, WordDocumentTool, JdParserTool, ResumeScoreTool, ProjectRewriteTool, MockInterviewTool
 from app.utils import ResourceUtils
 
@@ -22,8 +24,11 @@ from app.utils import ResourceUtils
 class ConversationChatService:
     conversation_store_service: ConversationStoreService
     document_index_service: DocumentIndexService
+    context_compression_service: ContextCompressionService = field(default_factory=ContextCompressionService)
+    context_verification_service: ContextVerificationService = field(default_factory=ContextVerificationService)
 
     _IMAGE_MARKDOWN_PATTERN = re.compile(r"!\[[^\]]*\]\((/conversation/image/[^)\s]+)\)")
+    _MAX_HISTORY_MESSAGES = 20  # 历史消息压缩阈值
 
     def __post_init__(self):
         self.qa_llm = None
@@ -41,17 +46,33 @@ class ConversationChatService:
         self.conversation_store_service.ensure_conversation_exists(conversation_id)
         self._ensure_initialized()
 
+        # 1. 获取对话历史并进行上下文压缩
         history = self.conversation_store_service.get_conversation_messages(conversation_id)
-        context = "" if normalized_mode == "memory" else self.document_index_service.get_context(conversation_id, effective_query)
+        compressed_history = self.context_compression_service.compress_history(
+            history, max_messages=self._MAX_HISTORY_MESSAGES
+        )
+
+        # 2. 检索上下文（含混合检索，返回详细来源）
+        if normalized_mode == "memory":
+            context = ""
+            source_docs = []
+        else:
+            context_result = self.document_index_service.get_context_with_details(
+                conversation_id, effective_query, limit=4
+            )
+            context = context_result["context"]
+            source_docs = context_result["documents"]
+
         user_content = self._compose_user_content(effective_query, normalized_image_urls)
 
+        # 3. 生成回答
         if normalized_image_urls:
-            answer = self._invoke_multimodal(history, context, effective_query, normalized_image_urls)
+            answer = self._invoke_multimodal(compressed_history, context, effective_query, normalized_image_urls)
         else:
             prompt = self.agent_prompt if normalized_mode == "agent" else self.qa_prompt
             prompt_messages = prompt.invoke({
                 "query": effective_query,
-                "history": self._build_history(history),
+                "history": self._build_history(compressed_history),
                 "context": context,
             }).to_messages()
 
@@ -61,11 +82,30 @@ class ConversationChatService:
                 answer = self.qa_llm.invoke(prompt_messages).content
 
         answer = answer or "抱歉，我暂时无法生成回答。"
+
+        # 4. 上下文验证 + 引用添加（仅在有检索上下文时执行）
+        verification_result = None
+        cited_answer = answer
+        if context and normalized_mode != "memory":
+            try:
+                verify_report = self.context_verification_service.generate_verification_report(
+                    answer, context, source_docs
+                )
+                verification_result = verify_report["verification"]
+                cited_answer = verify_report["cited_answer"]
+            except Exception as exc:
+                import logging
+                logging.getLogger(__name__).warning("上下文验证异常，跳过: %s", exc)
+
+        # 5. 存储历史（存原始回答，不含引用标记）
         self.conversation_store_service.append_message_pair(conversation_id, user_content, answer, normalized_mode)
         detail = self.conversation_store_service.get_conversation_detail(conversation_id)
         return {
-            "answer": answer,
+            "answer": cited_answer,  # 返回带引用的回答
+            "original_answer": answer,
             "conversation": detail,
+            "verification": verification_result,
+            "sources": source_docs,
         }
 
     def _ensure_initialized(self):

@@ -1257,3 +1257,146 @@ select.jd-input option {
         font-size: 14px;
     }
 }
+
+/* ============================================================
+   引用标记（Citation）样式
+   ============================================================ */
+
+sup.citation-ref {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 1px 4px;
+    border-radius: 3px;
+    margin: 0 1px;
+    cursor: help;
+    vertical-align: super;
+    user-select: none;
+}
+
+sup.citation-ref:hover {
+    background: var(--accent-strong);
+}
+
+/* ============================================================
+   来源面板（Sources Panel）样式
+   ============================================================ */
+
+.sources-panel {
+    margin-top: 12px;
+    margin-left: 34px;
+    background: var(--bg-user);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.sources-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+.sources-header:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.sources-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.sources-toggle {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.sources-list {
+    padding: 0 12px 8px;
+    border-top: 1px solid var(--border-soft);
+}
+
+.source-item {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.source-item:last-child {
+    border-bottom: none;
+}
+
+.source-header-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.source-citation-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    line-height: 1.4;
+}
+
+.source-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.source-score {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-left: auto;
+}
+
+.source-content-preview {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-left: 22px;
+}
+
+/* 验证状态 */
+.source-verification {
+    padding: 6px 12px 8px;
+    font-size: 12px;
+    border-top: 1px solid var(--border-soft);
+}
+
+.source-verification.risk-low {
+    background: rgba(16, 163, 127, 0.06);
+    color: #0b8f6f;
+}
+
+.source-verification.risk-medium {
+    background: rgba(245, 158, 11, 0.06);
+    color: #b8860b;
+}
+
+.source-verification.risk-high {
+    background: rgba(239, 68, 68, 0.06);
+    color: #dc2626;
+}
+
+.verification-label {
+    font-weight: 600;
+}
+
+.verification-detail {
+    font-style: italic;
+    opacity: 0.8;
+}
