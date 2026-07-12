@@ -173,6 +173,51 @@ textarea {
     gap: 12px;
 }
 
+.section-heading-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ---------- 折叠切换按钮 ---------- */
+.collapse-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-sidebar-muted);
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.3s ease, background 0.2s;
+}
+.collapse-toggle:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-sidebar);
+}
+.collapse-toggle svg {
+    transition: transform 0.3s ease;
+}
+.collapse-toggle.collapsed svg {
+    transform: rotate(-90deg);
+}
+
+/* 折叠动画 */
+.conversation-list {
+    overflow: hidden;
+    max-height: 2000px;
+    transition: max-height 0.4s ease, margin-top 0.4s ease, opacity 0.3s ease;
+}
+.sidebar-history.collapsed .conversation-list {
+    max-height: 0;
+    margin-top: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
 .sidebar-action-button {
     border: 1px solid rgba(255, 255, 255, 0.14);
     background: rgba(255, 255, 255, 0.06);
@@ -350,6 +395,30 @@ textarea {
 
 .analysis-close-btn:hover {
     color: var(--text-primary);
+}
+
+.analysis-collapse-btn {
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0 6px;
+    line-height: 1;
+    transition: transform 0.25s ease, color 0.15s ease;
+    vertical-align: middle;
+}
+
+.analysis-collapse-btn:hover {
+    color: var(--text-primary);
+}
+
+.analysis-collapse-btn.is-collapsed {
+    transform: rotate(-90deg);
+}
+
+.analysis-panel.is-collapsed .analysis-panel-body {
+    display: none;
 }
 
 .analysis-loading {

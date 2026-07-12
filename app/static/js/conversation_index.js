@@ -1328,6 +1328,14 @@
             submitCurrentInput();
         });
 
+        // 会话列表折叠 / 展开
+        $('#toggleConversationList').click(function () {
+            var $section = $(this).closest('.sidebar-history');
+            var $toggle = $(this);
+            $section.toggleClass('collapsed');
+            $toggle.toggleClass('collapsed');
+        });
+
         $('#createConversation').click(function () {
             state.currentConversationId = '';
             state.currentConversationMessages = [];
@@ -1394,6 +1402,17 @@
             $('#analysisPanel').hide();
         });
 
+        // 收起/展开 JD 分析面板
+        $('#collapseAnalysis').click(function () {
+            var $panel = $('#analysisPanel');
+            var $body = $('#analysisBody');
+            var $btn = $(this);
+            $body.slideToggle(200, function () {
+                $panel.toggleClass('is-collapsed');
+                $btn.toggleClass('is-collapsed');
+            });
+        });
+
         // 项目优化事件
         $('#startProjectRewrite').click(function () {
             startProjectRewrite();
@@ -1401,6 +1420,17 @@
 
         $('#closeProject').click(function () {
             $('#projectPanel').hide();
+        });
+
+        // 收起/展开项目优化面板
+        $('#collapseProject').click(function () {
+            var $panel = $('#projectPanel');
+            var $body = $('#projectBody');
+            var $btn = $(this);
+            $body.slideToggle(200, function () {
+                $panel.toggleClass('is-collapsed');
+                $btn.toggleClass('is-collapsed');
+            });
         });
 
         $('#copyProjectVersion').click(function () {
@@ -1429,6 +1459,17 @@
         $('#closeInterview').click(function () {
             $('#interviewPanel').hide();
             resetInterviewState();
+        });
+
+        // 收起/展开模拟面试面板
+        $('#collapseInterview').click(function () {
+            var $panel = $('#interviewPanel');
+            var $body = $('#interviewBody');
+            var $btn = $(this);
+            $body.slideToggle(200, function () {
+                $panel.toggleClass('is-collapsed');
+                $btn.toggleClass('is-collapsed');
+            });
         });
 
         $('#submitInterviewAnswer').click(function () {

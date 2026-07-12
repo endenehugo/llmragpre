@@ -37,7 +37,12 @@
         <section class="sidebar-history">
             <div class="section-heading">
                 <p class="eyebrow">会话</p>
-                <button type="button" class="sidebar-action-button" id="createConversation">新建</button>
+                <div class="section-heading-actions">
+                    <button type="button" class="collapse-toggle" id="toggleConversationList" title="收起/展开会话列表">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <button type="button" class="sidebar-action-button" id="createConversation">新建</button>
+                </div>
             </div>
             <div class="history-list conversation-list" id="conversationList"></div>
         </section>
@@ -145,6 +150,7 @@
                     <p class="eyebrow">JD 分析结果</p>
                     <div>
                         <button type="button" class="analysis-tool-btn" id="exportAnalysisBtn" title="导出 Markdown">📄 导出</button>
+                        <button type="button" class="analysis-collapse-btn" id="collapseAnalysis" title="收起/展开">▼</button>
                         <button type="button" class="analysis-close-btn" id="closeAnalysis">&times;</button>
                     </div>
                 </div>
@@ -196,6 +202,7 @@
                     <p class="eyebrow">项目优化结果</p>
                     <div>
                         <button type="button" class="analysis-tool-btn" id="exportProjectBtn" title="导出 Markdown">📄 导出</button>
+                        <button type="button" class="analysis-collapse-btn" id="collapseProject" title="收起/展开">▼</button>
                         <button type="button" class="analysis-close-btn" id="closeProject">&times;</button>
                     </div>
                 </div>
@@ -229,6 +236,7 @@
                     <p class="eyebrow">模拟面试</p>
                     <div>
                         <button type="button" class="analysis-tool-btn" id="exportInterviewBtn" title="导出 Markdown">📄 导出</button>
+                        <button type="button" class="analysis-collapse-btn" id="collapseInterview" title="收起/展开">▼</button>
                         <button type="button" class="analysis-close-btn" id="closeInterview">&times;</button>
                     </div>
                 </div>

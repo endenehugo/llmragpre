@@ -185,16 +185,16 @@
   },
   "active": "86db8b6d2e5e01a1",
   "lastOpenFiles": [
+    "app/static/js/conversation_index.js.tmp.22336.b0398d305c7f",
+    "app/static/js/conversation_index.js.tmp.22336.0a094673f965",
+    "app/static/js/conversation_index.js.tmp.22336.6bd7ee115e49",
+    "app/static/css/style.css.tmp.22336.19f8f0342e27",
+    "app/templates/index.html.tmp.22336.76b751c9b90b",
+    "app/templates/index.html.tmp.22336.e409112cbf52",
+    "app/templates/index.html.tmp.22336.7060ee08c0cc",
     "app/services/__pycache__/context_verification_service.cpython-312.pyc",
     "app/services/context_compression_service.py.tmp.18792.2a3cbb757854",
     "app/services/context_compression_service.py.tmp.18792.66840070b90f",
-    "app/services/context_verification_service.py.tmp.18792.9a7662b5d550",
-    "app/services/context_verification_service.py.tmp.18792.3ce48eb0be6c",
-    "app/services/context_verification_service.py.tmp.18792.67e1da1236c9",
-    "app/services/context_compression_service.py.tmp.18792.a8c67f0a0eca",
-    "app/services/context_compression_service.py.tmp.18792.920119c88e49",
-    "app/services/__pycache__/context_verification_service.cpython-38.pyc",
-    "app/services/__pycache__/context_compression_service.cpython-38.pyc",
-    "requirements.txt.tmp.18792.7151d858087a"
+    "app/services/context_verification_service.py.tmp.18792.9a7662b5d550"
   ]
 }
