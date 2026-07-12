@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from flask import Flask,Blueprint
 from injector import inject
-from app.handler import TestHandler,ChatSingleHandler,ChatMemoryHandler,IndexHandler,ChatAgentHandler,ChatRagHandler,ConversationHandler,DocumentHandler,JobHandler,ProjectHandler,InterviewHandler
+from app.handler import TestHandler,ChatSingleHandler,ChatMemoryHandler,IndexHandler,ChatAgentHandler,ChatRagHandler,ConversationHandler,DocumentHandler,JobHandler,ProjectHandler,InterviewHandler,ImageHandler,ResumeHandler,ExportHandler,KnowledgeHandler
 
 
 
@@ -19,6 +19,10 @@ class Router:
     job_handler: JobHandler
     project_handler: ProjectHandler
     interview_handler: InterviewHandler
+    image_handler: ImageHandler
+    resume_handler: ResumeHandler
+    export_handler: ExportHandler
+    knowledge_handler: KnowledgeHandler
 
     def register_router(self, app: Flask):
         bp = Blueprint('llmrag', __name__, url_prefix='')
@@ -49,5 +53,24 @@ class Router:
         bp.add_url_rule('/interview/answer', view_func=self.interview_handler.answer, methods=['POST'])
         bp.add_url_rule('/interview/list', view_func=self.interview_handler.list_sessions, methods=['GET'])
         bp.add_url_rule('/interview/detail', endpoint='interview_detail', view_func=self.interview_handler.detail, methods=['GET'])
+
+        # 第三阶段：岗位截图分析
+        bp.add_url_rule('/job/analyze-from-screenshot', view_func=self.image_handler.analyze_screenshot, methods=['POST'])
+
+        # 第三阶段：简历版本管理
+        bp.add_url_rule('/resume/versions/list', view_func=self.resume_handler.list_versions, methods=['GET'])
+        bp.add_url_rule('/resume/versions/detail', endpoint='resume_version_detail', view_func=self.resume_handler.get_version, methods=['GET'])
+        bp.add_url_rule('/resume/versions/compare', view_func=self.resume_handler.compare_versions, methods=['GET'])
+
+        # 第三阶段：结果导出
+        bp.add_url_rule('/export/analysis', view_func=self.export_handler.export_analysis, methods=['GET'])
+        bp.add_url_rule('/export/interview', view_func=self.export_handler.export_interview, methods=['GET'])
+        bp.add_url_rule('/export/project-rewrite', view_func=self.export_handler.export_project_rewrite, methods=['POST'])
+
+        # 第三阶段：内置知识库
+        bp.add_url_rule('/knowledge/rebuild', view_func=self.knowledge_handler.rebuild, methods=['POST'])
+        bp.add_url_rule('/knowledge/query', view_func=self.knowledge_handler.query, methods=['GET'])
+        bp.add_url_rule('/knowledge/categories', view_func=self.knowledge_handler.list_categories, methods=['GET'])
+        bp.add_url_rule('/knowledge/status', view_func=self.knowledge_handler.status, methods=['GET'])
 
         app.register_blueprint(bp)

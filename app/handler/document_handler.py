@@ -1,9 +1,13 @@
 import os
+import uuid
 from dataclasses import dataclass
+from datetime import datetime
 
 from flask import request
 from injector import inject
 
+from app.repository import DatabaseManager
+from app.repository.resume_version_repository import ResumeVersionRepository
 from app.response import Response, json
 from app.services import ConversationStoreService, DocumentParserService, DocumentIndexService
 
@@ -39,6 +43,9 @@ class DocumentHandler:
             except Exception:
                 self.conversation_store_service.update_document_status(document["document_id"], "failed")
                 raise
+            # 创建简历版本记录
+            self._create_resume_version(conversation_id, document, parsed_document)
+
             return json(Response(message="上传成功", data={"document": document}))
         except Exception as exc:
             return self._error_response(exc)
@@ -68,3 +75,25 @@ class DocumentHandler:
     def _safe_delete(path: str | None) -> None:
         if path and os.path.exists(path):
             os.remove(path)
+
+    @staticmethod
+    def _create_resume_version(conversation_id: str, document: dict, parsed_document: dict) -> None:
+        """创建简历版本记录"""
+        db_manager = DatabaseManager()
+        session = db_manager.get_session()
+        now = datetime.now()
+        try:
+            max_ver = ResumeVersionRepository.get_max_version_number(session, conversation_id)
+            with session.begin():
+                ResumeVersionRepository.create(
+                    session,
+                    version_id=f"rv_{uuid.uuid4().hex[:12]}",
+                    conversation_id=conversation_id,
+                    document_id=document["document_id"],
+                    version_number=max_ver + 1,
+                    original_name=document.get("original_name", ""),
+                    char_count=parsed_document.get("char_count", 0),
+                    created_at=now,
+                )
+        finally:
+            session.close()

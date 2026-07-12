@@ -6,6 +6,9 @@ from .job_description_service import JobDescriptionService
 from .resume_scoring_service import ResumeScoringService
 from .project_rewrite_service import ProjectRewriteService
 from .interview_simulation_service import InterviewSimulationService
+from .image_analysis_service import ImageAnalysisService
+from .builtin_knowledge_service import BuiltinKnowledgeService
+from .export_service import ExportService
 
 __all__ = [
     "DocumentParserService",
@@ -16,4 +19,7 @@ __all__ = [
     "ResumeScoringService",
     "ProjectRewriteService",
     "InterviewSimulationService",
+    "ImageAnalysisService",
+    "BuiltinKnowledgeService",
+    "ExportService",
 ]

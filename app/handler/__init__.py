@@ -9,6 +9,10 @@ from .document_handler import DocumentHandler
 from .job_handler import JobHandler
 from .project_handler import ProjectHandler
 from .interview_handler import InterviewHandler
+from .image_handler import ImageHandler
+from .resume_handler import ResumeHandler
+from .export_handler import ExportHandler
+from .knowledge_handler import KnowledgeHandler
 
 __all__ = [
     "TestHandler",
@@ -22,4 +26,8 @@ __all__ = [
     "JobHandler",
     "ProjectHandler",
     "InterviewHandler",
+    "ImageHandler",
+    "ResumeHandler",
+    "ExportHandler",
+    "KnowledgeHandler",
 ]

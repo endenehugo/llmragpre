@@ -7,7 +7,7 @@ from datetime import datetime
 from flask import request
 from injector import inject
 
-from app.repository import DatabaseManager, JobAnalysisRepository
+from app.repository import DatabaseManager, JobAnalysisRepository, ResumeVersionRepository
 from app.repository.job_analysis_repository import JobAnalysis
 from app.response import Response, json as response_json
 from app.services import ConversationStoreService, JobDescriptionService, ResumeScoringService
@@ -140,7 +140,7 @@ class JobHandler:
         session = db_manager.get_session()
         try:
             with session.begin():
-                JobAnalysisRepository.create(
+                job_analysis = JobAnalysisRepository.create(
                     session,
                     conversation_id=conversation_id,
                     jd_text=jd_text,
@@ -158,6 +158,15 @@ class JobHandler:
                     suggestions=json.dumps(scoring_result.get("suggestions", []), ensure_ascii=False),
                     created_at=now,
                 )
+
+                # 同步更新最新简历版本的分数
+                latest_version = ResumeVersionRepository.get_latest_by_conversation_id(session, conversation_id)
+                if latest_version is not None:
+                    ResumeVersionRepository.update_scores(
+                        session, latest_version,
+                        total_score=float(scoring_result.get("total_score", 0) or 0),
+                        dimensions=dimensions,
+                    )
         finally:
             session.close()
 

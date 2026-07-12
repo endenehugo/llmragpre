@@ -665,6 +665,7 @@
                     gaps: response.data.gaps || [],
                     suggestions: response.data.suggestions || [],
                 };
+                latestAnalysisId = response.data.id;
                 renderAnalysisResult({ jd_analysis: jdAnalysis, scoring: scoring });
                 // 恢复 JD 文本到输入框（作为提示）
                 $('#jdInput').val('[已有分析结果，可重新粘贴 JD 再次分析]');
@@ -685,14 +686,74 @@
             data: { conversation_id: conversationId },
         }).then(function (response) {
             var sessions = (response.data && response.data.sessions) || [];
+            var $container = $('#interviewHistory');
+            $container.empty();
             if (sessions.length > 0) {
-                var latest = sessions[0];
-                var statusText = latest.status === 'completed' ? '已结束' : '进行中';
-                var scoreText = latest.total_score ? ' · 评分: ' + latest.total_score : '';
-                $('#interviewStatus').text(
-                    '有 ' + sessions.length + ' 场面试记录（最新: ' + statusText + scoreText + '）'
-                );
+                $('#interviewStatus').text('有 ' + sessions.length + ' 场面试记录');
+                sessions.slice(0, 3).forEach(function (s) {
+                    var statusClass = 'ih-status-' + (s.status === 'completed' ? 'completed' : 'in_progress');
+                    var statusLabel = s.status === 'completed' ? '✓' : '▶';
+                    var $item = $('<div/>', {
+                        'class': 'interview-history-item',
+                        'data-session-id': s.session_id,
+                    });
+                    $item.append($('<span/>', {
+                        'class': 'ih-status ' + statusClass,
+                        text: statusLabel,
+                    }));
+                    $item.append($('<span/>', {
+                        text: s.direction + ' · ' + (s.round_count || 0) + '轮' + (s.total_score ? ' · ' + s.total_score + '分' : ''),
+                    }));
+                    $item.on('click', function () {
+                        loadInterviewDetail(s.session_id);
+                    });
+                    $container.append($item);
+                });
             }
+        }).fail(function () {
+            // 忽略
+        });
+    }
+
+    function loadInterviewDetail(sessionId) {
+        apiRequest({
+            type: 'GET',
+            url: baseUrl + 'interview/detail',
+            data: { session_id: sessionId },
+        }).then(function (response) {
+            var data = response.data;
+            if (!data || !data.session) {
+                return;
+            }
+            var session = data.session;
+            var messages = data.messages || [];
+
+            $('#interviewPanel').show();
+            $('#interviewQuestionArea').hide();
+            $('#interviewFeedback').hide();
+            var summaryHtml = '<h4>面试回顾</h4>' +
+                '<p><strong>方向：</strong>' + session.direction + '</p>' +
+                '<p><strong>状态：</strong>' + (session.status === 'completed' ? '已完成' : '进行中') + '</p>' +
+                '<p><strong>轮次：</strong>' + (session.round_count || 0) + ' 轮</p>' +
+                (session.total_score ? '<p><strong>总分：</strong>' + session.total_score + '/100</p>' : '') +
+                (session.overall_summary ? '<hr style="border:none;border-top:1px solid var(--border-soft);margin:12px 0;"><p><strong>总结：</strong></p><p>' + escapeHtml(session.overall_summary) + '</p>' : '');
+
+            if (messages.length > 0) {
+                summaryHtml += '<hr style="border:none;border-top:1px solid var(--border-soft);margin:12px 0;"><p><strong>对话记录：</strong></p>';
+                messages.forEach(function (msg) {
+                    if (msg.msg_type === 'question') {
+                        summaryHtml += '<p style="color:var(--accent);font-weight:600;margin:8px 0 4px;">❓ ' + escapeHtml(msg.content) + '</p>';
+                    } else if (msg.msg_type === 'answer') {
+                        summaryHtml += '<p style="margin:4px 0 4px 12px;color:var(--text-secondary);">💬 ' + escapeHtml(msg.content) + '</p>';
+                    } else if (msg.msg_type === 'evaluation') {
+                        summaryHtml += '<p style="margin:4px 0 8px 12px;font-size:13px;color:#d97706;">📝 ' + escapeHtml(msg.content) + (msg.score ? ' <strong>评分：' + msg.score + '/100</strong>' : '') + '</p>';
+                    }
+                });
+            }
+
+            $('#interviewSummary').html(summaryHtml).show();
+            $('#interviewSessionInfo').text('面试回顾 · ' + session.direction);
+            interviewState.sessionId = sessionId;
         }).fail(function () {
             // 忽略
         });
@@ -917,6 +978,256 @@
     }
 
     // ==============================
+    // 截图分析功能
+    // ==============================
+
+    function startScreenshotAnalysis() {
+        var conversationId = state.currentConversationId;
+        if (!conversationId) {
+            $('#jdStatus').text('请先创建或选择一个会话');
+            return;
+        }
+        $('#screenshotInput').trigger('click');
+    }
+
+    function uploadScreenshotAndAnalyze(file) {
+        if (!file) { return; }
+        var fileName = (file.name || '').toLowerCase();
+        var mimeType = (file.type || '').toLowerCase();
+        if (!/^image\/(png|jpeg|webp)$/.test(mimeType) && !/\.(png|jpg|jpeg|webp)$/.test(fileName)) {
+            $('#jdStatus').text('仅支持 png、jpg、jpeg、webp 图片。');
+            return;
+        }
+        var conversationId = state.currentConversationId;
+        if (!conversationId) { $('#jdStatus').text('请先创建或选择一个会话'); return; }
+
+        var formData = new FormData();
+        formData.append('conversation_id', conversationId);
+        formData.append('file', file);
+        $('#jdStatus').text('正在上传截图...');
+        $('#startScreenshotAnalysis').prop('disabled', true);
+
+        $.ajax({
+            type: 'POST',
+            url: baseUrl + 'conversation/image/upload',
+            data: formData, processData: false, contentType: false, dataType: 'json',
+        }).done(function (response) {
+            if (!response || (response.code && response.code !== 'success')) {
+                $('#jdStatus').text((response && response.message) || '图片上传失败');
+                $('#startScreenshotAnalysis').prop('disabled', false);
+                return;
+            }
+            var imageUrl = response.data && response.data.image_url;
+            if (!imageUrl) { $('#jdStatus').text('图片上传失败'); $('#startScreenshotAnalysis').prop('disabled', false); return; }
+
+            $('#jdStatus').text('正在分析截图中的 JD...');
+            $('#analysisLoading').show();
+            $('#analysisResult').hide();
+            $('#analysisPanel').show();
+
+            apiRequest({
+                type: 'POST',
+                url: baseUrl + 'job/analyze-from-screenshot',
+                data: JSON.stringify({ conversation_id: conversationId, image_url: imageUrl }),
+            }).then(function (analysisResponse) {
+                $('#jdStatus').text('截图分析完成');
+                renderAnalysisResult(analysisResponse.data);
+            }).fail(function (xhr) {
+                var msg = (xhr.responseJSON && xhr.responseJSON.message) || '截图分析失败';
+                $('#jdStatus').text(msg);
+                $('#analysisLoading').hide();
+            }).always(function () {
+                $('#startScreenshotAnalysis').prop('disabled', false);
+            });
+        }).fail(function (xhr) {
+            var msg = (xhr.responseJSON && xhr.responseJSON.message) || '图片上传失败';
+            $('#jdStatus').text(msg);
+            $('#startScreenshotAnalysis').prop('disabled', false);
+        });
+    }
+
+    // ==============================
+    // 雷达图
+    // ==============================
+
+    var radarChartInstance = null;
+
+    function renderRadarChart(dimensions) {
+        var canvas = document.getElementById('radarChart');
+        if (!canvas) { return; }
+        if (radarChartInstance) { radarChartInstance.destroy(); radarChartInstance = null; }
+
+        radarChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'radar',
+            data: {
+                labels: ['技能匹配度', '项目相关性', '表达质量', '岗位适配度'],
+                datasets: [{
+                    label: '评分',
+                    data: [dimensions.skill_match || 0, dimensions.project_relevance || 0, dimensions.expression_quality || 0, dimensions.job_fitness || 0],
+                    backgroundColor: 'rgba(16, 163, 127, 0.2)',
+                    borderColor: 'rgba(16, 163, 127, 0.9)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(16, 163, 127, 0.9)',
+                    pointBorderColor: '#fff',
+                    pointRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: true,
+                scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 20, font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.08)' }, angleLines: { color: 'rgba(0,0,0,0.08)' }, pointLabels: { font: { size: 11 } } } },
+                plugins: { legend: { display: false } },
+            }
+        });
+    }
+
+    var _origRenderAnalysisResult = renderAnalysisResult;
+    renderAnalysisResult = function (data) {
+        _origRenderAnalysisResult(data);
+        if (data && data.scoring && data.scoring.dimensions) {
+            renderRadarChart(data.scoring.dimensions);
+        }
+    };
+
+    // ==============================
+    // 简历版本管理
+    // ==============================
+
+    function loadResumeVersions(conversationId) {
+        if (!conversationId) { $('#versionSelector').hide(); return; }
+        apiRequest({
+            type: 'GET', url: baseUrl + 'resume/versions/list', data: { conversation_id: conversationId },
+        }).then(function (response) {
+            var versions = (response.data && response.data.versions) || [];
+            var $select = $('#resumeVersionSelect');
+            $select.empty().append($('<option/>', { value: '', text: '选择版本查看分数' }));
+            if (versions.length > 1) {
+                versions.forEach(function (v) {
+                    var label = 'v' + v.version_number + ' ' + (v.original_name || '') + (v.total_score !== null ? ' [' + v.total_score + '分]' : '');
+                    $select.append($('<option/>', { value: v.version_id, text: label }));
+                });
+                $('#versionSelector').show();
+            } else {
+                $('#versionSelector').hide();
+            }
+        }).fail(function () { $('#versionSelector').hide(); });
+    }
+
+    // ==============================
+    // 知识库功能
+    // ==============================
+
+    function loadKnowledgeStatus() {
+        apiRequest({ type: 'GET', url: baseUrl + 'knowledge/status' }).then(function (response) {
+            var data = response.data || {};
+            $('#knowledgeStatus').text(data.index_exists ? ('已就绪（' + (data.total_documents || 0) + ' 篇）') : '需要重建索引');
+        }).fail(function () { $('#knowledgeStatus').text('无法获取状态'); });
+    }
+
+    function searchKnowledge() {
+        var query = $('#knowledgeQuery').val().trim();
+        if (!query) { return; }
+        $('#knowledgeStatus').text('正在搜索...');
+        apiRequest({ type: 'GET', url: baseUrl + 'knowledge/query', data: { query: query, k: 4 } }).then(function (response) {
+            var results = (response.data && response.data.results) || [];
+            var $container = $('#knowledgeResults').empty();
+            if (!results.length) {
+                $container.append($('<div/>', { 'class': 'knowledge-result-item', text: '未找到相关内容' }));
+            } else {
+                results.forEach(function (r) {
+                    var $item = $('<div/>', { 'class': 'knowledge-result-item' });
+                    $item.append($('<div/>', { 'class': 'kr-title', text: r.title }));
+                    $item.append($('<span/>', { 'class': 'kr-category', text: r.category }));
+                    $item.append($('<div/>', { 'class': 'kr-content', text: r.content }));
+                    $container.append($item);
+                });
+            }
+            $('#knowledgeStatus').text('找到 ' + results.length + ' 条结果');
+        }).fail(function () { $('#knowledgeStatus').text('搜索失败'); });
+    }
+
+    function rebuildKnowledge() {
+        $('#knowledgeStatus').text('正在重建知识库索引...');
+        apiRequest({ type: 'POST', url: baseUrl + 'knowledge/rebuild' }).then(function (response) {
+            $('#knowledgeStatus').text(response.message || '重建完成');
+        }).fail(function (xhr) {
+            $('#knowledgeStatus').text((xhr.responseJSON && xhr.responseJSON.message) || '重建失败');
+        });
+    }
+
+    // ==============================
+    // 导出功能
+    // ==============================
+
+    var latestAnalysisId = null;
+
+    function exportAnalysis() {
+        if (!latestAnalysisId) {
+            var conversationId = state.currentConversationId;
+            if (!conversationId) { return; }
+            apiRequest({ type: 'GET', url: baseUrl + 'job/analysis/list', data: { conversation_id: conversationId } }).then(function (response) {
+                var analyses = (response.data && response.data.analyses) || [];
+                if (analyses.length > 0) { doExportAnalysis(analyses[0].id); }
+            });
+            return;
+        }
+        doExportAnalysis(latestAnalysisId);
+    }
+
+    function doExportAnalysis(analysisId) {
+        apiRequest({ type: 'GET', url: baseUrl + 'export/analysis', data: { analysis_id: analysisId } }).then(function (response) {
+            var md = response.data && response.data.markdown;
+            if (md) { downloadMarkdown(md, 'JD分析报告.md'); }
+        }).fail(function (xhr) {
+            $('#jdStatus').text((xhr.responseJSON && xhr.responseJSON.message) || '导出失败');
+        });
+    }
+
+    function exportProjectRewrite() {
+        var issues = [];
+        $('#projectIssues li').each(function () { issues.push($(this).text()); });
+        var improved = $('#projectImproved').text();
+        if (!improved || improved === '-') { return; }
+        var result = {
+            original_issues: issues, improved_version: improved,
+            python_backend_version: $('#projectPythonVersion').text(),
+            agent_version: $('#projectAgentVersion').text(),
+        };
+        apiRequest({ type: 'POST', url: baseUrl + 'export/project-rewrite', data: JSON.stringify({ result: result }) }).then(function (response) {
+            var md = response.data && response.data.markdown;
+            if (md) { downloadMarkdown(md, '项目优化报告.md'); }
+        }).fail(function () {
+            downloadMarkdown(generateLocalProjectMd(result), '项目优化报告.md');
+        });
+    }
+
+    function exportInterview() {
+        if (!interviewState.sessionId) { return; }
+        apiRequest({ type: 'GET', url: baseUrl + 'export/interview', data: { session_id: interviewState.sessionId } }).then(function (response) {
+            var md = response.data && response.data.markdown;
+            if (md) { downloadMarkdown(md, '模拟面试回顾.md'); }
+        }).fail(function () {});
+    }
+
+    function generateLocalProjectMd(result) {
+        var lines = ['# 项目经历优化报告', '', '---', '', '## 原描述问题', ''];
+        (result.original_issues || []).forEach(function (i) { lines.push('- ' + i); });
+        lines.push('', '---', '', '## 优化版本（通用）', '', result.improved_version || '', '');
+        lines.push('---', '', '## Python 后端导向版本', '', result.python_backend_version || '', '');
+        lines.push('---', '', '## Agent / AI 导向版本', '', result.agent_version || '', '');
+        lines.push('', '---', '', '*由 求职助手 Agent 自动生成*');
+        return lines.join('\n');
+    }
+
+    function downloadMarkdown(markdown, filename) {
+        var blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var $a = $('<a/>', { href: url, download: filename, style: 'display:none;' });
+        $('body').append($a);
+        $a[0].click();
+        setTimeout(function () { URL.revokeObjectURL(url); $a.remove(); }, 1000);
+    }
+
+    // ==============================
     // 事件绑定
     // ==============================
 
@@ -968,6 +1279,7 @@
             openConversation(conversationId);
             loadLatestAnalysis();
             loadInterviewSessions(conversationId);
+            loadResumeVersions(conversationId);
         });
 
         $('.composer-panel').on('click', '.image-preview-remove', function () {
@@ -1048,10 +1360,60 @@
             }
         });
 
+        // 截图分析事件
+        $('#startScreenshotAnalysis').click(function () {
+            startScreenshotAnalysis();
+        });
+
+        $('#screenshotInput').change(function (event) {
+            var file = event.target.files && event.target.files[0];
+            uploadScreenshotAndAnalyze(file);
+            event.target.value = '';
+        });
+
+        // 版本选择
+        $('#resumeVersionSelect').change(function () {
+            var versionId = $(this).val();
+            if (!versionId) {
+                $('#versionScoreBadge').hide();
+                return;
+            }
+            apiRequest({ type: 'GET', url: baseUrl + 'resume/versions/detail', data: { version_id: versionId } }).then(function (response) {
+                var v = response.data;
+                if (v && v.total_score !== null) {
+                    var dims = v.dimensions || {};
+                    $('#versionScoreBadge').html(
+                        '总分: <strong>' + v.total_score + '</strong> | ' +
+                        '技能: ' + (dims.skill_match || '-') + ' | ' +
+                        '项目: ' + (dims.project_relevance || '-') + ' | ' +
+                        '表达: ' + (dims.expression_quality || '-') + ' | ' +
+                        '适配: ' + (dims.job_fitness || '-')
+                    ).show();
+                } else {
+                    $('#versionScoreBadge').text('该版本暂无评分数据').show();
+                }
+            });
+        });
+
+        // 知识库事件
+        $('#searchKnowledge').click(function () { searchKnowledge(); });
+        $('#knowledgeQuery').keypress(function (e) {
+            if (e.which === 13) { e.preventDefault(); searchKnowledge(); }
+        });
+        $('#rebuildKnowledge').click(function () { rebuildKnowledge(); });
+
+        // 导出事件
+        $('#exportAnalysisBtn').click(function () { exportAnalysis(); });
+        $('#exportProjectBtn').click(function () { exportProjectRewrite(); });
+        $('#exportInterviewBtn').click(function () { exportInterview(); });
+
+        // 加载简历版本和知识库状态
         loadConversationList().then(function () {
             if (state.currentConversationId) {
                 loadInterviewSessions(state.currentConversationId);
+                loadResumeVersions(state.currentConversationId);
             }
+            loadKnowledgeStatus();
         }).fail(function (xhr) {
             var message = (xhr.responseJSON && xhr.responseJSON.message) || '初始化会话失败';
             $('#uploadHint').text(message);
