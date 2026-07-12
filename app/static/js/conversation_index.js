@@ -393,26 +393,27 @@
                 data: formData,
                 processData: false,
                 contentType: false,
-                success: function (response) {
-                    if (response && response.code && response.code !== 'success') {
-                        $('#uploadHint').text(response.message || '图片上传失败');
-                        return;
-                    }
-                    var imageUrl = response.data && response.data.image_url;
-                    if (!imageUrl) {
-                        $('#uploadHint').text('图片上传失败');
-                        return;
-                    }
-                    state.currentConversationId = conversationId;
-                    state.pendingImageUrls.push(imageUrl);
-                    renderImagePreview();
-                    $('#uploadHint').text('图片已加入当前输入，可直接提问。');
-                },
-                error: function (xhr) {
-                    var message = (xhr.responseJSON && xhr.responseJSON.message) || '图片上传失败';
-                    $('#uploadHint').text(message);
-                },
+                dataType: 'json',
+            }).done(function (response) {
+                if (response && response.code && response.code !== 'success') {
+                    $('#uploadHint').text(response.message || '图片上传失败');
+                    return;
+                }
+                var imageUrl = response.data && response.data.image_url;
+                if (!imageUrl) {
+                    $('#uploadHint').text('图片上传失败');
+                    return;
+                }
+                state.currentConversationId = conversationId;
+                state.pendingImageUrls.push(imageUrl);
+                renderImagePreview();
+                $('#uploadHint').text('图片已加入当前输入，可直接提问。');
+            }).fail(function (xhr) {
+                var message = (xhr.responseJSON && xhr.responseJSON.message) || '图片上传失败';
+                $('#uploadHint').text(message);
             });
+        }).fail(function () {
+            $('#uploadHint').text('会话初始化失败，无法上传图片。');
         });
     }
 
@@ -451,32 +452,41 @@
     }
 
     function uploadDocument(file) {
-        if (!file || !state.currentConversationId) {
+        if (!file) {
             return;
         }
-        var formData = new FormData();
-        formData.append('conversation_id', state.currentConversationId);
-        formData.append('file', file);
-        $('#uploadHint').text('正在上传并建立索引，请稍候...');
+        return ensureConversationReady().then(function (conversationId) {
+            if (!conversationId) {
+                $('#uploadHint').text('会话初始化失败，无法上传文档。');
+                return;
+            }
 
-        return $.ajax({
-            type: 'POST',
-            url: baseUrl + 'document/upload',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (response) {
+            var formData = new FormData();
+            formData.append('conversation_id', conversationId);
+            formData.append('file', file);
+            $('#uploadHint').text('正在上传并建立索引，请稍候...');
+
+            return $.ajax({
+                type: 'POST',
+                url: baseUrl + 'document/upload',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+            }).done(function (response) {
                 if (response && response.code && response.code !== 'success') {
                     $('#uploadHint').text(response.message || '上传失败');
                     return;
                 }
+                state.currentConversationId = conversationId;
                 $('#uploadHint').text('文档已入库，可直接开始提问。');
-                openConversation(state.currentConversationId);
-            },
-            error: function (xhr) {
+                openConversation(conversationId);
+            }).fail(function (xhr) {
                 var message = (xhr.responseJSON && xhr.responseJSON.message) || '上传失败';
                 $('#uploadHint').text(message);
-            },
+            });
+        }).fail(function () {
+            $('#uploadHint').text('会话初始化失败，无法上传文档。');
         });
     }
 
@@ -502,6 +512,171 @@
         input.value = '';
         send(value);
     }
+
+    // ==============================
+    // JD 分析功能
+    // ==============================
+
+    function renderAnalysisResult(data) {
+        if (!data) {
+            return;
+        }
+        var jdAnalysis = data.jd_analysis || {};
+        var scoring = data.scoring || {};
+
+        // 岗位名称
+        $('#analysisJobRole').text(jdAnalysis.job_role || '-');
+
+        // 总分
+        $('#analysisTotalScore').text(scoring.total_score || 0);
+
+        // 关键词
+        var $keywords = $('#analysisKeywords').empty();
+        var keywords = jdAnalysis.keywords || [];
+        if (keywords.length) {
+            keywords.forEach(function (kw) {
+                $keywords.append($('<span/>', { 'class': 'keyword-tag', text: kw }));
+            });
+        } else {
+            $keywords.text('-');
+        }
+
+        // 维度评分
+        var $dimensions = $('#dimensionGrid').empty();
+        var dimensions = scoring.dimensions || {};
+        var dimLabels = {
+            'skill_match': '技能匹配度',
+            'project_relevance': '项目相关性',
+            'expression_quality': '表达质量',
+            'job_fitness': '岗位适配度',
+        };
+        var dimColors = {
+            'skill_match': '#10a37f',
+            'project_relevance': '#3b82f6',
+            'expression_quality': '#f59e0b',
+            'job_fitness': '#8b5cf6',
+        };
+        Object.keys(dimLabels).forEach(function (key) {
+            var score = dimensions[key] || 0;
+            var label = dimLabels[key];
+            var color = dimColors[key] || '#10a37f';
+            var $dim = $('<div/>', { 'class': 'dimension-item' });
+            $dim.append($('<span/>', { 'class': 'dimension-label', text: label }));
+            $dim.append(
+                $('<div/>', { 'class': 'dimension-bar-bg' }).append(
+                    $('<div/>', {
+                        'class': 'dimension-bar-fill',
+                        style: 'width: ' + score + '%; background-color: ' + color + ';',
+                    })
+                )
+            );
+            $dim.append($('<span/>', { 'class': 'dimension-score', text: score }));
+            $dimensions.append($dim);
+        });
+
+        // 优势
+        var $strengths = $('#analysisStrengths').empty();
+        (scoring.strengths || []).forEach(function (item) {
+            $strengths.append($('<li/>', { text: item }));
+        });
+
+        // 缺口
+        var $gaps = $('#analysisGaps').empty();
+        (scoring.gaps || []).forEach(function (item) {
+            $gaps.append($('<li/>', { text: item }));
+        });
+
+        // 建议
+        var $suggestions = $('#analysisSuggestions').empty();
+        (scoring.suggestions || []).forEach(function (item) {
+            $suggestions.append($('<li/>', { text: item }));
+        });
+
+        $('#analysisLoading').hide();
+        $('#analysisResult').show();
+        $('#analysisPanel').show();
+    }
+
+    function startJdAnalysis() {
+        var jdText = $('#jdInput').val().trim();
+        if (!jdText) {
+            $('#jdStatus').text('请先粘贴职位描述（JD）');
+            return;
+        }
+
+        var conversationId = state.currentConversationId;
+        if (!conversationId) {
+            $('#jdStatus').text('请先创建或选择一个会话');
+            return;
+        }
+
+        $('#jdStatus').text('正在分析...');
+        $('#startAnalysis').prop('disabled', true);
+        $('#analysisLoading').show();
+        $('#analysisResult').hide();
+        $('#analysisPanel').show();
+
+        apiRequest({
+            type: 'POST',
+            url: baseUrl + 'job/analyze',
+            data: JSON.stringify({
+                conversation_id: conversationId,
+                jd_text: jdText,
+            }),
+        }).then(function (response) {
+            $('#jdStatus').text('分析完成');
+            renderAnalysisResult(response.data);
+        }).fail(function (xhr, textStatus, errorThrown) {
+            var message = (xhr.responseJSON && xhr.responseJSON.message) || '分析失败，请稍后重试';
+            $('#jdStatus').text(message);
+            $('#analysisLoading').hide();
+            $('#analysisResult').hide();
+            $('#analysisPanel').show();
+            // 移除之前的错误信息，显示新错误
+            $('#analysisBody').find('.analysis-error').remove();
+            $('#analysisBody').append(
+                $('<div/>', { 'class': 'analysis-error', text: message })
+            );
+        }).always(function () {
+            $('#startAnalysis').prop('disabled', false);
+        });
+    }
+
+    function loadLatestAnalysis() {
+        var conversationId = state.currentConversationId;
+        if (!conversationId) {
+            return;
+        }
+
+        apiRequest({
+            type: 'GET',
+            url: baseUrl + 'job/analysis/latest',
+            data: { conversation_id: conversationId },
+        }).then(function (response) {
+            if (response.data && response.data.job_role) {
+                var jdAnalysis = {
+                    job_role: response.data.job_role,
+                    keywords: response.data.keywords || [],
+                };
+                var scoring = {
+                    total_score: response.data.total_score,
+                    dimensions: response.data.dimensions || {},
+                    strengths: response.data.strengths || [],
+                    gaps: response.data.gaps || [],
+                    suggestions: response.data.suggestions || [],
+                };
+                renderAnalysisResult({ jd_analysis: jdAnalysis, scoring: scoring });
+                // 恢复 JD 文本到输入框（作为提示）
+                $('#jdInput').val('[已有分析结果，可重新粘贴 JD 再次分析]');
+            }
+        }).fail(function () {
+            // 没有历史分析结果，忽略
+        });
+    }
+
+    // ==============================
+    // 事件绑定
+    // ==============================
 
     $(document).ready(function () {
         setConversationState(false);
@@ -549,6 +724,7 @@
         $('.conversation-list').on('click', '.conversation-item', function () {
             var conversationId = $(this).data('id');
             openConversation(conversationId);
+            loadLatestAnalysis();
         });
 
         $('.composer-panel').on('click', '.image-preview-remove', function () {
@@ -569,6 +745,15 @@
                 $('.input').val(prompt);
                 submitCurrentInput();
             }
+        });
+
+        // JD 分析事件
+        $('#startAnalysis').click(function () {
+            startJdAnalysis();
+        });
+
+        $('#closeAnalysis').click(function () {
+            $('#analysisPanel').hide();
         });
 
         loadConversationList().fail(function (xhr) {

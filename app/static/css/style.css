@@ -256,6 +256,261 @@ textarea {
     display: none;
 }
 
+/* ============================== */
+/* JD 分析侧边栏                  */
+/* ============================== */
+
+.jd-hint {
+    margin-top: 12px;
+    color: var(--text-sidebar-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.jd-input {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-sidebar);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.jd-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.jd-input:focus {
+    border-color: rgba(16, 163, 127, 0.5);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.jd-analyze-btn {
+    width: 100%;
+    margin-top: 10px;
+    text-align: center;
+    font-weight: 600;
+    border-color: rgba(16, 163, 127, 0.4);
+    background: rgba(16, 163, 127, 0.18);
+    color: #dcfce7;
+}
+
+.jd-analyze-btn:hover {
+    background: rgba(16, 163, 127, 0.28);
+}
+
+.jd-analyze-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.jd-status {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-sidebar-muted);
+    line-height: 1.5;
+}
+
+/* ============================== */
+/* JD 分析结果面板                */
+/* ============================== */
+
+.analysis-panel {
+    margin: 0 28px 16px;
+    padding: 20px 24px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    background: #ffffff;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+}
+
+.analysis-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.analysis-close-btn {
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.analysis-close-btn:hover {
+    color: var(--text-primary);
+}
+
+.analysis-loading {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.analysis-result {
+    display: grid;
+    gap: 16px;
+}
+
+.analysis-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.analysis-job-role,
+.analysis-total-score {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.analysis-label {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.analysis-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.analysis-score-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+}
+
+.analysis-keywords {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.keyword-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.keyword-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(16, 163, 127, 0.1);
+    color: #0b8f6f;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.analysis-dimensions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dimension-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.dimension-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dimension-label {
+    width: 90px;
+    font-size: 13px;
+    color: var(--text-primary);
+    flex-shrink: 0;
+}
+
+.dimension-bar-bg {
+    flex: 1;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+}
+
+.dimension-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.6s ease;
+}
+
+.dimension-score {
+    width: 32px;
+    text-align: right;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    flex-shrink: 0;
+}
+
+.analysis-strengths,
+.analysis-gaps,
+.analysis-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.analysis-label-strength {
+    color: #10a37f;
+}
+
+.analysis-label-gap {
+    color: #ef4444;
+}
+
+.analysis-label-suggestion {
+    color: #3b82f6;
+}
+
+.analysis-strengths ul,
+.analysis-gaps ul,
+.analysis-suggestions ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-primary);
+}
+
+.analysis-strengths li,
+.analysis-gaps li,
+.analysis-suggestions li {
+    margin-bottom: 4px;
+}
+
+.analysis-error {
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: #fef2f2;
+    color: #dc2626;
+    font-size: 14px;
+}
+
 .empty-state {
     padding: 12px 14px;
     border-radius: 14px;

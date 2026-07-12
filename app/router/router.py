@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from flask import Flask,Blueprint
 from injector import inject
-from app.handler import TestHandler,ChatSingleHandler,ChatMemoryHandler,IndexHandler,ChatAgentHandler,ChatRagHandler,ConversationHandler,DocumentHandler
+from app.handler import TestHandler,ChatSingleHandler,ChatMemoryHandler,IndexHandler,ChatAgentHandler,ChatRagHandler,ConversationHandler,DocumentHandler,JobHandler
 
 
 
@@ -16,6 +16,7 @@ class Router:
     chat_rag_handler: ChatRagHandler
     conversation_handler: ConversationHandler
     document_handler: DocumentHandler
+    job_handler: JobHandler
 
     def register_router(self, app: Flask):
         bp = Blueprint('llmrag', __name__, url_prefix='')
@@ -36,5 +37,8 @@ class Router:
         bp.add_url_rule('/api/keycheck', view_func=self.conversation_handler.api_key_check, methods=['GET'])
         bp.add_url_rule('/document/upload', view_func=self.document_handler.upload, methods=['POST'])
         bp.add_url_rule('/document/delete', view_func=self.document_handler.delete, methods=['POST'])
+        bp.add_url_rule('/job/analyze', view_func=self.job_handler.analyze, methods=['POST'])
+        bp.add_url_rule('/job/analysis/latest', view_func=self.job_handler.get_latest_analysis, methods=['GET'])
+        bp.add_url_rule('/job/analysis/list', view_func=self.job_handler.list_analysis, methods=['GET'])
 
         app.register_blueprint(bp)

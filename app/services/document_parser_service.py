@@ -8,7 +8,6 @@ import docx2txt
 from flask import current_app
 from pypdf import PdfReader
 from werkzeug.datastructures import FileStorage
-from werkzeug.utils import secure_filename
 
 from app.utils import ResourceUtils
 
@@ -16,12 +15,16 @@ from app.utils import ResourceUtils
 @dataclass
 class DocumentParserService:
     def save_and_parse(self, conversation_id: str, storage_file: FileStorage) -> dict:
-        original_name = secure_filename(storage_file.filename or "")
-        if not original_name:
+        raw_filename = storage_file.filename or ""
+        if not raw_filename:
             raise ValueError("缺少上传文件名")
 
-        extension = self._get_extension(original_name)
+        # 从原始文件名提取扩展名（不能用 secure_filename，它会删除中文和点号）
+        extension = self._get_extension(raw_filename)
         self._validate_extension(extension)
+
+        # original_name 保留原始文件名用于前端展示
+        original_name = raw_filename
 
         document_id = f"doc_{uuid.uuid4().hex[:16]}"
         stored_name = f"{conversation_id}_{document_id}.{extension}"

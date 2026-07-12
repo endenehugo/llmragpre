@@ -46,9 +46,19 @@
                 <p class="eyebrow">文档</p>
                 <button type="button" class="sidebar-action-button" id="triggerUpload">上传</button>
             </div>
-            <input type="file" id="documentInput" class="hidden-file-input" accept=".txt,.pdf,.docx,.doc">
+            <input type="file" id="documentInput" class="hidden-file-input" accept=".txt,.pdf,.docx">
             <div class="document-hint" id="uploadHint">支持 txt、pdf、docx。doc 需要先转成 docx。</div>
             <div class="document-list" id="documentList"></div>
+        </section>
+
+        <section class="sidebar-history" id="jdSection">
+            <div class="section-heading">
+                <p class="eyebrow">JD 分析</p>
+            </div>
+            <p class="jd-hint">粘贴职位描述（JD），分析简历匹配度。</p>
+            <textarea class="jd-input" id="jdInput" placeholder="在此粘贴职位描述..." rows="5"></textarea>
+            <button type="button" class="sidebar-action-button jd-analyze-btn" id="startAnalysis">开始分析</button>
+            <div class="jd-status" id="jdStatus"></div>
         </section>
     </aside>
 
@@ -72,6 +82,49 @@
                     <button type="button" class="prompt-chip" data-prompt="请列出这份材料里的关键事实和时间节点">提取关键事实</button>
                     <button type="button" class="prompt-chip" data-prompt="请把当前讨论整理成结构化提纲">整理对话提纲</button>
                     <button type="button" class="prompt-chip" data-prompt="请告诉我当前会话已经绑定了哪些文档">查看会话文档</button>
+                </div>
+            </section>
+
+            <!-- JD 分析结果面板 -->
+            <section class="analysis-panel" id="analysisPanel" style="display: none;">
+                <div class="analysis-panel-header">
+                    <p class="eyebrow">JD 分析结果</p>
+                    <button type="button" class="analysis-close-btn" id="closeAnalysis">&times;</button>
+                </div>
+                <div class="analysis-panel-body" id="analysisBody">
+                    <div class="analysis-loading" id="analysisLoading">正在分析，请稍候...</div>
+                    <div class="analysis-result" id="analysisResult" style="display: none;">
+                        <div class="analysis-summary">
+                            <div class="analysis-job-role">
+                                <span class="analysis-label">岗位</span>
+                                <span class="analysis-value" id="analysisJobRole">-</span>
+                            </div>
+                            <div class="analysis-total-score">
+                                <span class="analysis-label">匹配总分</span>
+                                <span class="analysis-score-value" id="analysisTotalScore">0</span>
+                            </div>
+                        </div>
+                        <div class="analysis-keywords">
+                            <span class="analysis-label">关键词</span>
+                            <div class="keyword-tags" id="analysisKeywords"></div>
+                        </div>
+                        <div class="analysis-dimensions">
+                            <span class="analysis-label">维度评分</span>
+                            <div class="dimension-grid" id="dimensionGrid"></div>
+                        </div>
+                        <div class="analysis-strengths">
+                            <span class="analysis-label analysis-label-strength">优势</span>
+                            <ul id="analysisStrengths"></ul>
+                        </div>
+                        <div class="analysis-gaps">
+                            <span class="analysis-label analysis-label-gap">缺口</span>
+                            <ul id="analysisGaps"></ul>
+                        </div>
+                        <div class="analysis-suggestions">
+                            <span class="analysis-label analysis-label-suggestion">建议</span>
+                            <ul id="analysisSuggestions"></ul>
+                        </div>
+                    </div>
                 </div>
             </section>
 
