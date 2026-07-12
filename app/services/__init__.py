@@ -4,6 +4,8 @@ from .conversation_store_service import ConversationStoreService
 from .conversation_chat_service import ConversationChatService
 from .job_description_service import JobDescriptionService
 from .resume_scoring_service import ResumeScoringService
+from .project_rewrite_service import ProjectRewriteService
+from .interview_simulation_service import InterviewSimulationService
 
 __all__ = [
     "DocumentParserService",
@@ -12,4 +14,6 @@ __all__ = [
     "ConversationChatService",
     "JobDescriptionService",
     "ResumeScoringService",
+    "ProjectRewriteService",
+    "InterviewSimulationService",
 ]

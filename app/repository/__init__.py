@@ -3,6 +3,7 @@ from .conversation_repository import Conversation, ConversationRepository
 from .message_repository import ConversationMessage, MessageRepository
 from .document_repository import ConversationDocument, DocumentRepository
 from .job_analysis_repository import JobAnalysis, JobAnalysisRepository
+from .interview_repository import InterviewSession, InterviewSessionRepository, InterviewMessage, InterviewMessageRepository
 
 __all__ = [
     "Base",
@@ -15,4 +16,8 @@ __all__ = [
     "DocumentRepository",
     "JobAnalysis",
     "JobAnalysisRepository",
+    "InterviewSession",
+    "InterviewSessionRepository",
+    "InterviewMessage",
+    "InterviewMessageRepository",
 ]

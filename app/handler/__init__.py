@@ -7,6 +7,9 @@ from .chat_rag_handler import ChatRagHandler
 from .conversation_handler import ConversationHandler
 from .document_handler import DocumentHandler
 from .job_handler import JobHandler
+from .project_handler import ProjectHandler
+from .interview_handler import InterviewHandler
+
 __all__ = [
     "TestHandler",
     "ChatSingleHandler",
@@ -17,4 +20,6 @@ __all__ = [
     "ConversationHandler",
     "DocumentHandler",
     "JobHandler",
+    "ProjectHandler",
+    "InterviewHandler",
 ]

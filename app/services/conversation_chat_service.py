@@ -13,7 +13,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from app.services.conversation_store_service import ConversationStoreService
 from app.services.document_index_service import DocumentIndexService
-from app.tools import MultiplyTool, WebSearchTool, WordDocumentTool
+from app.tools import MultiplyTool, WebSearchTool, WordDocumentTool, JdParserTool, ResumeScoreTool, ProjectRewriteTool, MockInterviewTool
 from app.utils import ResourceUtils
 
 
@@ -87,7 +87,7 @@ class ConversationChatService:
             model=multimodal_model,
             temperature=0.7,
         )
-        tools = [MultiplyTool(), WebSearchTool(), WordDocumentTool()]
+        tools = [MultiplyTool(), WebSearchTool(), WordDocumentTool(), JdParserTool(), ResumeScoreTool(), ProjectRewriteTool(), MockInterviewTool()]
         self.tool_dic = {tool.name: tool for tool in tools}
         self.agent_llm = self.qa_llm.bind_tools(tools)
 
@@ -98,7 +98,7 @@ class ConversationChatService:
         ])
 
         self.agent_prompt = ChatPromptTemplate.from_messages([
-            ("system", "你是一个专业的问答机器人。你将获得当前会话的相关文档、聊天历史和用户问题。请优先利用当前会话文档回答。需要最新网页信息时主动调用 web_search_tool，需要生成 Word 文档时主动调用 word_document_tool。"),
+            ("system", "你是一个专业的求职助手机器人。你将获得当前会话的相关文档、聊天历史和用户问题。\n请优先利用当前会话文档回答。\n可用工具：\n- web_search_tool：搜索最新网页信息\n- word_document_tool：生成 Word 文档\n- jd_parser_tool：分析职位描述（JD），提取关键词、要求、加分项等\n- resume_score_tool：根据 JD 对简历进行结构化评分\n- project_rewrite_tool：优化简历中的项目经历描述\n- mock_interview_tool：根据 JD 和简历生成面试题\n用户如果需要分析 JD、评分简历、优化项目或模拟面试，请主动调用对应工具。"),
             MessagesPlaceholder("history"),
             ("human", "相关的文档内容：{context}\n\n用户的问题：{query}"),
         ])

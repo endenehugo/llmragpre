@@ -56,9 +56,35 @@
                 <p class="eyebrow">JD 分析</p>
             </div>
             <p class="jd-hint">粘贴职位描述（JD），分析简历匹配度。</p>
-            <textarea class="jd-input" id="jdInput" placeholder="在此粘贴职位描述..." rows="5"></textarea>
+            <textarea class="jd-input" id="jdInput" placeholder="在此粘贴职位描述..." rows="3"></textarea>
             <button type="button" class="sidebar-action-button jd-analyze-btn" id="startAnalysis">开始分析</button>
             <div class="jd-status" id="jdStatus"></div>
+        </section>
+
+        <!-- 第二阶段：项目经历优化 -->
+        <section class="sidebar-history" id="projectSection">
+            <div class="section-heading">
+                <p class="eyebrow">项目优化</p>
+            </div>
+            <p class="jd-hint">粘贴简历中的项目描述，获得多版本优化建议。</p>
+            <textarea class="jd-input" id="projectInput" placeholder="在此粘贴项目描述..." rows="3"></textarea>
+            <button type="button" class="sidebar-action-button jd-analyze-btn" id="startProjectRewrite">开始优化</button>
+            <div class="jd-status" id="projectStatus"></div>
+        </section>
+
+        <!-- 第二阶段：模拟面试 -->
+        <section class="sidebar-history" id="interviewSection">
+            <div class="section-heading">
+                <p class="eyebrow">模拟面试</p>
+            </div>
+            <p class="jd-hint">基于 JD 和简历生成面试题，进行模拟面试。</p>
+            <select class="jd-input" id="interviewDirection">
+                <option value="general">通用方向</option>
+                <option value="python_backend">Python 后端</option>
+                <option value="agent_ai">Agent / AI 应用</option>
+            </select>
+            <button type="button" class="sidebar-action-button jd-analyze-btn" id="startInterview">开始面试</button>
+            <div class="jd-status" id="interviewStatus"></div>
         </section>
     </aside>
 
@@ -125,6 +151,55 @@
                             <ul id="analysisSuggestions"></ul>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            <!-- 第二阶段：项目优化结果面板 -->
+            <section class="analysis-panel" id="projectPanel" style="display: none;">
+                <div class="analysis-panel-header">
+                    <p class="eyebrow">项目优化结果</p>
+                    <button type="button" class="analysis-close-btn" id="closeProject">&times;</button>
+                </div>
+                <div class="analysis-panel-body" id="projectBody">
+                    <div class="analysis-loading" id="projectLoading">正在优化，请稍候...</div>
+                    <div class="analysis-result" id="projectResult" style="display: none;">
+                        <div class="analysis-section">
+                            <span class="analysis-label analysis-label-gap">原描述问题</span>
+                            <ul id="projectIssues"></ul>
+                        </div>
+                        <div class="analysis-section">
+                            <span class="analysis-label analysis-label-strength">✨ 优化版本（通用）</span>
+                            <div class="project-version" id="projectImproved"></div>
+                        </div>
+                        <div class="analysis-section">
+                            <span class="analysis-label" style="color:#3b82f6;">🐍 Python 后端导向版本</span>
+                            <div class="project-version" id="projectPythonVersion"></div>
+                        </div>
+                        <div class="analysis-section">
+                            <span class="analysis-label" style="color:#8b5cf6;">🤖 Agent / AI 导向版本</span>
+                            <div class="project-version" id="projectAgentVersion"></div>
+                        </div>
+                        <button type="button" class="sidebar-action-button jd-analyze-btn" id="copyProjectVersion" style="margin-top:12px;">复制优化版本</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 第二阶段：模拟面试面板 -->
+            <section class="analysis-panel" id="interviewPanel" style="display: none;">
+                <div class="analysis-panel-header">
+                    <p class="eyebrow">模拟面试</p>
+                    <button type="button" class="analysis-close-btn" id="closeInterview">&times;</button>
+                </div>
+                <div class="analysis-panel-body" id="interviewBody">
+                    <div class="interview-status" id="interviewSessionInfo"></div>
+                    <div class="interview-question-area" id="interviewQuestionArea">
+                        <div class="interview-question" id="interviewQuestion"></div>
+                        <textarea class="interview-answer-input" id="interviewAnswer" placeholder="输入你的回答..." rows="4"></textarea>
+                        <button type="button" class="sidebar-action-button jd-analyze-btn" id="submitInterviewAnswer">提交回答</button>
+                    </div>
+                    <div class="interview-feedback" id="interviewFeedback" style="display: none;"></div>
+                    <div class="interview-summary" id="interviewSummary" style="display: none;"></div>
+                    <div class="interview-loading" id="interviewLoading" style="display: none;">正在处理，请稍候...</div>
                 </div>
             </section>
 

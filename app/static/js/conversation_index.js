@@ -674,6 +674,248 @@
         });
     }
 
+    function loadInterviewSessions(conversationId) {
+        if (!conversationId) {
+            return;
+        }
+
+        apiRequest({
+            type: 'GET',
+            url: baseUrl + 'interview/list',
+            data: { conversation_id: conversationId },
+        }).then(function (response) {
+            var sessions = (response.data && response.data.sessions) || [];
+            if (sessions.length > 0) {
+                var latest = sessions[0];
+                var statusText = latest.status === 'completed' ? '已结束' : '进行中';
+                var scoreText = latest.total_score ? ' · 评分: ' + latest.total_score : '';
+                $('#interviewStatus').text(
+                    '有 ' + sessions.length + ' 场面试记录（最新: ' + statusText + scoreText + '）'
+                );
+            }
+        }).fail(function () {
+            // 忽略
+        });
+    }
+
+    // ==============================
+    // 项目经历优化功能
+    // ==============================
+
+    function renderProjectResult(data) {
+        if (!data) {
+            return;
+        }
+
+        // 原描述问题
+        var $issues = $('#projectIssues').empty();
+        (data.original_issues || []).forEach(function (item) {
+            $issues.append($('<li/>', { text: item }));
+        });
+
+        // 优化版本
+        $('#projectImproved').text(data.improved_version || '-');
+        $('#projectPythonVersion').text(data.python_backend_version || '-');
+        $('#projectAgentVersion').text(data.agent_version || '-');
+
+        $('#projectLoading').hide();
+        $('#projectResult').show();
+        $('#projectPanel').show();
+    }
+
+    function startProjectRewrite() {
+        var projectText = $('#projectInput').val().trim();
+        if (!projectText) {
+            $('#projectStatus').text('请先粘贴项目描述');
+            return;
+        }
+
+        var conversationId = state.currentConversationId;
+        if (!conversationId) {
+            $('#projectStatus').text('请先创建或选择一个会话');
+            return;
+        }
+
+        $('#projectStatus').text('正在优化...');
+        $('#startProjectRewrite').prop('disabled', true);
+        $('#projectLoading').show();
+        $('#projectResult').hide();
+        $('#projectPanel').show();
+
+        apiRequest({
+            type: 'POST',
+            url: baseUrl + 'resume/project/rewrite',
+            data: JSON.stringify({
+                conversation_id: conversationId,
+                project_description: projectText,
+            }),
+        }).then(function (response) {
+            $('#projectStatus').text('优化完成');
+            renderProjectResult(response.data);
+        }).fail(function (xhr, textStatus, errorThrown) {
+            var message = (xhr.responseJSON && xhr.responseJSON.message) || '优化失败，请稍后重试';
+            $('#projectStatus').text(message);
+            $('#projectLoading').hide();
+            $('#projectResult').hide();
+        }).always(function () {
+            $('#startProjectRewrite').prop('disabled', false);
+        });
+    }
+
+    // ==============================
+    // 模拟面试功能
+    // ==============================
+
+    var interviewState = {
+        sessionId: '',
+        questionIndex: 0,
+        totalQuestions: 0,
+        questions: [],
+    };
+
+    function resetInterviewState() {
+        interviewState.sessionId = '';
+        interviewState.questionIndex = 0;
+        interviewState.totalQuestions = 0;
+        interviewState.questions = [];
+    }
+
+    function startInterview() {
+        var conversationId = state.currentConversationId;
+        if (!conversationId) {
+            $('#interviewStatus').text('请先创建或选择一个会话');
+            return;
+        }
+
+        var direction = $('#interviewDirection').val();
+
+        $('#interviewStatus').text('正在生成面试题...');
+        $('#startInterview').prop('disabled', true);
+        $('#interviewPanel').show();
+        $('#interviewLoading').show();
+        $('#interviewQuestionArea').hide();
+        $('#interviewFeedback').hide();
+        $('#interviewSummary').hide();
+
+        resetInterviewState();
+
+        apiRequest({
+            type: 'POST',
+            url: baseUrl + 'interview/start',
+            data: JSON.stringify({
+                conversation_id: conversationId,
+                direction: direction,
+            }),
+        }).then(function (response) {
+            var data = response.data;
+            interviewState.sessionId = data.session_id;
+            interviewState.questions = data.questions || [];
+            interviewState.questionIndex = data.question_index || 0;
+            interviewState.totalQuestions = data.total_questions || 0;
+
+            $('#interviewStatus').text('面试已开始');
+            $('#interviewLoading').hide();
+            $('#interviewFeedback').hide();
+            $('#interviewSummary').hide();
+            $('#interviewSessionInfo').text(
+                '面试进行中（' + directionLabel(direction) + '）· 共 ' + interviewState.totalQuestions + ' 题'
+            );
+
+            // 显示第一题
+            var currentQ = data.current_question || {};
+            showInterviewQuestion(currentQ.question || '', interviewState.questionIndex + 1);
+        }).fail(function (xhr, textStatus, errorThrown) {
+            var message = (xhr.responseJSON && xhr.responseJSON.message) || '面试启动失败';
+            $('#interviewStatus').text(message);
+            $('#interviewLoading').hide();
+            $('#interviewQuestionArea').hide();
+        }).always(function () {
+            $('#startInterview').prop('disabled', false);
+        });
+    }
+
+    function directionLabel(direction) {
+        var labels = {
+            'general': '通用方向',
+            'python_backend': 'Python 后端',
+            'agent_ai': 'Agent / AI 应用',
+        };
+        return labels[direction] || direction;
+    }
+
+    function showInterviewQuestion(question, index) {
+        $('#interviewQuestion').text('第 ' + index + ' 题：' + question);
+        $('#interviewAnswer').val('');
+        $('#interviewQuestionArea').show();
+        $('#interviewFeedback').hide();
+        $('#interviewSummary').hide();
+        $('#submitInterviewAnswer').prop('disabled', false);
+    }
+
+    function submitInterviewAnswer() {
+        var answer = $('#interviewAnswer').val().trim();
+        if (!answer) {
+            return;
+        }
+
+        if (!interviewState.sessionId) {
+            return;
+        }
+
+        $('#submitInterviewAnswer').prop('disabled', true);
+        $('#interviewLoading').show();
+        $('#interviewFeedback').hide();
+
+        apiRequest({
+            type: 'POST',
+            url: baseUrl + 'interview/answer',
+            data: JSON.stringify({
+                session_id: interviewState.sessionId,
+                answer: answer,
+                question_index: interviewState.questionIndex,
+            }),
+        }).then(function (response) {
+            var data = response.data;
+            $('#interviewLoading').hide();
+
+            if (data.action === 'summary') {
+                // 面试结束
+                $('#interviewQuestionArea').hide();
+                $('#interviewSummary').show().html(
+                    '<h4>🎉 面试结束</h4>' +
+                    '<p><strong>评分：</strong>' + (data.score || 0) + '/100</p>' +
+                    '<p><strong>面试评价：</strong></p>' +
+                    '<p>' + escapeHtml(data.evaluation || '') + '</p>' +
+                    '<hr style="border:none;border-top:1px solid var(--border-soft);margin:12px 0;">' +
+                    '<p><strong>总结：</strong></p>' +
+                    '<p>' + escapeHtml(data.overall_summary || '') + '</p>'
+                );
+                $('#interviewSessionInfo').text('面试已结束 · 总分 ' + (data.score || 0));
+            } else {
+                // 继续面试
+                var evalHtml = '<span class="feedback-score">评分：' + (data.score || 0) + '/100</span>';
+                evalHtml += '<p>' + escapeHtml(data.evaluation || '') + '</p>';
+                $('#interviewFeedback').html(evalHtml).show();
+
+                // 显示下一题
+                setTimeout(function () {
+                    var nextQ = data.next_question || '';
+                    interviewState.questionIndex = data.question_index || 0;
+                    if (nextQ) {
+                        showInterviewQuestion(nextQ, interviewState.questionIndex + 1);
+                    } else {
+                        $('#interviewQuestionArea').hide();
+                    }
+                }, 1500);
+            }
+        }).fail(function (xhr, textStatus, errorThrown) {
+            var message = (xhr.responseJSON && xhr.responseJSON.message) || '提交失败';
+            $('#interviewLoading').hide();
+            $('#interviewFeedback').html('<p style="color:#ef4444;">' + escapeHtml(message) + '</p>').show();
+            $('#submitInterviewAnswer').prop('disabled', false);
+        });
+    }
+
     // ==============================
     // 事件绑定
     // ==============================
@@ -725,6 +967,7 @@
             var conversationId = $(this).data('id');
             openConversation(conversationId);
             loadLatestAnalysis();
+            loadInterviewSessions(conversationId);
         });
 
         $('.composer-panel').on('click', '.image-preview-remove', function () {
@@ -756,7 +999,60 @@
             $('#analysisPanel').hide();
         });
 
-        loadConversationList().fail(function (xhr) {
+        // 项目优化事件
+        $('#startProjectRewrite').click(function () {
+            startProjectRewrite();
+        });
+
+        $('#closeProject').click(function () {
+            $('#projectPanel').hide();
+        });
+
+        $('#copyProjectVersion').click(function () {
+            var text = $('#projectImproved').text();
+            if (text && text !== '-') {
+                navigator.clipboard.writeText(text).then(function () {
+                    $('#projectStatus').text('已复制优化版本');
+                }).catch(function () {
+                    // Fallback
+                    var $textarea = $('<textarea>');
+                    $textarea.val(text);
+                    $('body').append($textarea);
+                    $textarea.select();
+                    document.execCommand('copy');
+                    $textarea.remove();
+                    $('#projectStatus').text('已复制优化版本');
+                });
+            }
+        });
+
+        // 模拟面试事件
+        $('#startInterview').click(function () {
+            startInterview();
+        });
+
+        $('#closeInterview').click(function () {
+            $('#interviewPanel').hide();
+            resetInterviewState();
+        });
+
+        $('#submitInterviewAnswer').click(function () {
+            submitInterviewAnswer();
+        });
+
+        // Interview textarea: Ctrl/Cmd + Enter to submit
+        $('#interviewAnswer').keydown(function (event) {
+            if ((event.ctrlKey || event.metaKey) && event.which === 13) {
+                event.preventDefault();
+                submitInterviewAnswer();
+            }
+        });
+
+        loadConversationList().then(function () {
+            if (state.currentConversationId) {
+                loadInterviewSessions(state.currentConversationId);
+            }
+        }).fail(function (xhr) {
             var message = (xhr.responseJSON && xhr.responseJSON.message) || '初始化会话失败';
             $('#uploadHint').text(message);
         });
