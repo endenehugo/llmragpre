@@ -11,14 +11,10 @@
             "id": "86db8b6d2e5e01a1",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "docs/rag_evaluation_and_optimization.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "rag_evaluation_and_optimization"
+              "title": "新标签页"
             }
           }
         ]
@@ -185,16 +181,30 @@
   },
   "active": "86db8b6d2e5e01a1",
   "lastOpenFiles": [
+    "career_docs/ChatGPT Image 2026年6月10日 13_44_55.png",
+    "career_docs/ChatGPT Image 2026年6月10日 13_43_13.png",
+    "career_docs/纠错.md",
+    "求职助手Agent平台开发文档.md",
+    "career_docs/求职助手Agent平台开发文档.md",
+    "career_docs/求职助手Agent平台阶段开发清单.md",
+    "career_docs/ChatGPT Image 2026年6月10日 13_46_58.png",
+    "项目简历表述-后端与Agent方向.md",
+    "career_docs/项目简历表述-后端与Agent方向.md",
+    "career_docs/简历-Agent开发实习生.md",
+    "career_docs/工具建议.md",
+    "career_docs",
+    "resources/parsed_docs/conv_20260712072752_db28e8/doc_bf0716932c4540c7.txt",
+    "resources/uploads/conv_20260712072752_db28e8/conv_20260712072752_db28e8_doc_bf0716932c4540c7.docx",
+    "resources/faiss_index_uploads/conv_20260712072752_db28e8/index.faiss",
+    "resources/faiss_index_uploads/conv_20260712072752_db28e8/index.pkl",
+    "resources/faiss_index_uploads/conv_20260712072752_db28e8",
+    "resources/parsed_docs/conv_20260712072752_db28e8/doc_1419f143f592468c.txt",
+    "resources/uploads/conv_20260712072752_db28e8/conv_20260712072752_db28e8_doc_1419f143f592468c.docx",
+    "求职助手Agent平台阶段开发清单.md",
+    "简历-Agent开发实习生.md",
+    "纠错.md",
+    "docs/rag_evaluation_and_optimization.md",
     "app/static/js/conversation_index.js.tmp.22336.b0398d305c7f",
-    "app/static/js/conversation_index.js.tmp.22336.0a094673f965",
-    "app/static/js/conversation_index.js.tmp.22336.6bd7ee115e49",
-    "app/static/css/style.css.tmp.22336.19f8f0342e27",
-    "app/templates/index.html.tmp.22336.76b751c9b90b",
-    "app/templates/index.html.tmp.22336.e409112cbf52",
-    "app/templates/index.html.tmp.22336.7060ee08c0cc",
-    "app/services/__pycache__/context_verification_service.cpython-312.pyc",
-    "app/services/context_compression_service.py.tmp.18792.2a3cbb757854",
-    "app/services/context_compression_service.py.tmp.18792.66840070b90f",
-    "app/services/context_verification_service.py.tmp.18792.9a7662b5d550"
+    "app/static/js/conversation_index.js.tmp.22336.0a094673f965"
   ]
 }

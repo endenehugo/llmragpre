@@ -21,9 +21,9 @@
 - 向量模型：DashScope Embedding `text-embedding-v3`
 - 向量库：FAISS
 - Agent 工具：
-- `MultiplyTool`：简单乘法计算
-- `WebSearchTool`：联网搜索公开网页信息
-- `WordDocumentTool`：生成或整理 Word 文档
+  - `MultiplyTool`：简单乘法计算
+  - `WebSearchTool`：联网搜索公开网页信息
+  - `WordDocumentTool`：生成或整理 Word 文档
 
 ## 项目结构
 
@@ -42,6 +42,7 @@
 │   ├── utils/                  # 资源路径、API Key 检测等工具
 │   ├── __init__.py             # Flask app 初始化与配置加载
 │   └── module.py               # Injector 模块
+├── career_docs/                # 与项目运行无关的求职/简历包装文档
 ├── config/                     # dev / test / pre / prod 配置
 ├── docs/                       # 设计文档与问题复盘
 ├── resources/
@@ -61,6 +62,12 @@
 ├── wsgi.py                     # Gunicorn 入口
 └── requirements.txt            # Python 依赖
 ```
+
+## 文档整理说明
+
+- `docs/`：保留项目设计、排障复盘、功能开发记录等与实现直接相关的文档。
+- `career_docs/`：存放求职、简历包装、面试准备等不影响项目运行和协作的补充材料。
+- 仓库根目录尽量只保留入口文件、配置文件和少量必须直接可见的项目说明文档，避免文档噪声影响查找。
 
 ## 运行环境
 
@@ -435,8 +442,9 @@ python -m app.utils.api_key_checker
 示例：
 
 ```powershell
-# Python 单元测试
-D:\conda\python.exe -m pytest app/test_tools/test_image_multimodal_service.py -v
+# Python 单元测试（优先直接用 unittest 跑对应模块）
+python -m unittest app.test_tools.test_document_index_service
+python -m unittest app.test_tools.test_image_multimodal_service
 
 # 前端回归断言
 node test_tools/test_frontend_message_render.js
